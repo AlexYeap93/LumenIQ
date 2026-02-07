@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  lumeniq-app_frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lumeniq-social-media-platform
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+    networks:
+      - lumeniq-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  lumeniq-network:
+    driver: bridge
+
+# Optional: Add volumes for persistent data if needed
+# volumes:
+#   lumeniq-data:
