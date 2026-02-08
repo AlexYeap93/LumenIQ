@@ -28,6 +28,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
+  const isDesktopSidebarExpanded = true;
 
   const navItems: NavItem[] = [
     {
@@ -79,39 +80,24 @@ export function ShellLayout({ children }: ShellLayoutProps) {
       {/* Desktop Sidebar */}
       <motion.aside
         initial={false}
-        animate={{ width: isSidebarExpanded ? 240 : 80 }}
+        animate={{ width: 240 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
         className="hidden md:flex flex-col bg-gradient-to-br from-blue-500 via-blue-800 to-blue-900 shadow-xl relative z-10"
       >
         {/* Logo Section */}
         <div className="h-16 flex items-center justify-center border-b border-white/10">
-          <AnimatePresence mode="wait">
-            {isSidebarExpanded ? (
-              <motion.img
-                key="logo-full"
-                src={logoIcon}
-                alt="LumenIQ"
-                className="h-12 w-auto cursor-pointer"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={handleLogoClick}
-              />
-            ) : (
-              <motion.button
-                key="logo-icon"
-                onClick={handleLogoClick}
-                className="flex items-center justify-center hover:scale-110 transition-transform p-1"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <img src={logoIcon} alt="LumenIQ" className="h-20 w-auto object-contain" />
-              </motion.button>
-            )}
-          </AnimatePresence>
+          <motion.img
+            key="logo-full"
+            src={logoIcon}
+            alt="LumenIQ"
+            className="h-6 mr-2 w-fit cursor-pointer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={handleLogoClick}
+          />
+          <span className="text-white text-base font-outfit">LumenIQ</span>
         </div>
 
         {/* Navigation Items */}
@@ -130,7 +116,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
             >
               <div className="flex-shrink-0">{item.icon}</div>
               <AnimatePresence>
-                {isSidebarExpanded && (
+                {isDesktopSidebarExpanded && (
                   <motion.span
                     initial={{ opacity: 0, width: 0 }}
                     animate={{ opacity: 1, width: 'auto' }}
@@ -158,7 +144,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
               <LogOut className="w-6 h-6" />
             </div>
             <AnimatePresence>
-              {isSidebarExpanded && (
+              {isDesktopSidebarExpanded && (
                 <motion.span
                   initial={{ opacity: 0, width: 0 }}
                   animate={{ opacity: 1, width: 'auto' }}
@@ -173,17 +159,6 @@ export function ShellLayout({ children }: ShellLayoutProps) {
           </motion.button>
         </div>
 
-        {/* Expand/Collapse Toggle */}
-        <button
-          onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-          className="absolute -right-3 top-20 w-6 h-6 rounded-full bg-white shadow-lg flex items-center justify-center text-primary hover:scale-110 transition-transform"
-        >
-          {isSidebarExpanded ? (
-            <X className="w-4 h-4" />
-          ) : (
-            <Menu className="w-4 h-4" />
-          )}
-        </button>
       </motion.aside>
 
       {/* Mobile Header */}
