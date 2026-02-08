@@ -81,7 +81,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
         initial={false}
         animate={{ width: isSidebarExpanded ? 240 : 80 }}
         transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="hidden md:flex flex-col gradient-blue-dark shadow-xl relative z-10"
+        className="hidden md:flex flex-col bg-gradient-to-br from-blue-500 via-blue-800 to-blue-900 shadow-xl relative z-10"
       >
         {/* Logo Section */}
         <div className="h-16 flex items-center justify-center border-b border-white/10">
@@ -115,7 +115,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
+        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto bg">
           {navItems.map((item) => (
             <motion.button
               key={item.id}

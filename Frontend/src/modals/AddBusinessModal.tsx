@@ -1,0 +1,152 @@
+import { Button } from '../components/ui/button';
+import { Card } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { Textarea } from '../components/ui/textarea';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '../components/ui/dialog';
+
+interface BusinessFormData {
+  name: string;
+  description: string;
+  websiteUrl: string;
+  instagramHandle: string;
+  brandColor: string;
+  location: string;
+}
+
+interface AddBusinessModalProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  value: BusinessFormData;
+  onChange: (updates: Partial<BusinessFormData>) => void;
+  onSubmit: () => void;
+}
+
+export function AddBusinessModal({
+  open,
+  onOpenChange,
+  value,
+  onChange,
+  onSubmit
+}: AddBusinessModalProps) {
+  const handleSubmit = () => {
+    onSubmit();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-2xl w-full rounded-2xl border border-slate-200 bg-white/95 p-6 font-switzer">
+        <DialogHeader className="text-left">
+          <DialogTitle className="text-2xl font-outfit text-slate-900">Add a new business</DialogTitle>
+          <DialogDescription className="text-sm text-slate-600">
+            Provide the same details you can edit later for your business.
+          </DialogDescription>
+        </DialogHeader>
+
+        <Card className="rounded-2xl border border-slate-200/70 bg-slate-50/60 p-4">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newBusinessName" className="text-slate-700">Business Name</Label>
+              <Input
+                id="newBusinessName"
+                value={value.name}
+                onChange={(event) => onChange({ name: event.target.value })}
+                placeholder="My New Business"
+                className="border-slate-200 bg-white/90"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="newBusinessDesc" className="text-slate-700">Description</Label>
+              <Textarea
+                id="newBusinessDesc"
+                value={value.description}
+                onChange={(event) => onChange({ description: event.target.value })}
+                placeholder="Brief description"
+                className="min-h-20 border-slate-200 bg-white/90"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="newBusinessWebsite" className="text-slate-700">Website URL</Label>
+                <Input
+                  id="newBusinessWebsite"
+                  type="url"
+                  value={value.websiteUrl}
+                  onChange={(event) => onChange({ websiteUrl: event.target.value })}
+                  placeholder="https://example.com"
+                  className="border-slate-200 bg-white/90"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newBusinessInstagram" className="text-slate-700">Instagram Handle</Label>
+                <Input
+                  id="newBusinessInstagram"
+                  value={value.instagramHandle}
+                  onChange={(event) => onChange({ instagramHandle: event.target.value })}
+                  placeholder="@yourbusiness"
+                  className="border-slate-200 bg-white/90"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="newBusinessColor" className="text-slate-700">Brand Color</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="newBusinessColor"
+                    type="color"
+                    value={value.brandColor}
+                    onChange={(event) => onChange({ brandColor: event.target.value })}
+                    className="w-16 h-10 p-1 cursor-pointer border-slate-200 bg-white/90"
+                  />
+                  <Input
+                    value={value.brandColor}
+                    onChange={(event) => onChange({ brandColor: event.target.value })}
+                    placeholder="#3b82f6"
+                    className="border-slate-200 bg-white/90"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newBusinessLocation" className="text-slate-700">Location</Label>
+                <Input
+                  id="newBusinessLocation"
+                  value={value.location}
+                  onChange={(event) => onChange({ location: event.target.value })}
+                  placeholder="City, Country"
+                  className="border-slate-200 bg-white/90"
+                />
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        <DialogFooter className="pt-4">
+          <DialogClose asChild>
+            <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50">
+              Cancel
+            </Button>
+          </DialogClose>
+          <Button
+            onClick={handleSubmit}
+            disabled={!value.name}
+            className="gradient-blue-primary text-white hover:opacity-90 disabled:opacity-60"
+          >
+            Add Business
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
