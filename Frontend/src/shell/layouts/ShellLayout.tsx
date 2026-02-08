@@ -10,7 +10,6 @@ import {
   LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import logoImage from '../../components/photos/LumenIQ Logo.png';
 import logoIcon from '../../components/photos/whiteLogo.png';
 
 interface ShellLayoutProps {
@@ -163,12 +162,15 @@ export function ShellLayout({ children }: ShellLayoutProps) {
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 gradient-blue-dark flex items-center justify-between px-4 z-50 shadow-lg">
-        <img 
-          src={logoImage} 
-          alt="LumenIQ" 
-          className="h-8 w-auto cursor-pointer" 
-          onClick={handleLogoClick}
-        />
+        <div className="flex items-center gap-2">
+          <img 
+            src={logoIcon} 
+            alt="LumenIQ" 
+            className="h-8 w-auto cursor-pointer" 
+            onClick={handleLogoClick}
+          />
+          <span className="text-white text-base font-outfit">LumenIQ</span>
+        </div>
         <button
           onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
           className="text-white p-2"
@@ -196,12 +198,15 @@ export function ShellLayout({ children }: ShellLayoutProps) {
               className="md:hidden fixed left-0 top-0 bottom-0 w-64 gradient-blue-dark z-50 flex flex-col"
             >
               <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
-                <img 
-                  src={logoImage} 
-                  alt="LumenIQ" 
-                  className="h-8 w-auto cursor-pointer" 
-                  onClick={handleLogoClick}
-                />
+                <div className="flex items-center gap-2">
+                  <img 
+                    src={logoIcon} 
+                    alt="LumenIQ" 
+                    className="h-8 w-auto cursor-pointer" 
+                    onClick={handleLogoClick}
+                  />
+                  <span className="text-white text-base font-outfit">LumenIQ</span>
+                </div>  
                 <button
                   onClick={() => setIsSidebarExpanded(false)}
                   className="text-white p-2"
