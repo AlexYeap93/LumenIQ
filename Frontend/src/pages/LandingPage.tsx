@@ -243,8 +243,8 @@ export function LandingPage() {
                   <span>Live preview</span>
                   <span className="rounded-full border border-white/10 px-2 py-1 text-sm">Auto-updating</span>
                 </div>
-                <div className="mt-6 space-y-5">
-                  <div className="rounded-2xl border border-white/15 bg-slate-950/20 p-5 sm:p-6">
+                <div className="mt-6 space-y-5 pb-6">
+                  <div className="rounded-2xl border border-white/15 bg-blue-500/20 p-5 sm:p-6">
                     <p className="text-sm uppercase text-slate-900">live preview</p>
                     <h2 className="mt-3 text-xl font-outfit text-slate-900">Your Planned Content</h2>
                     <p className="mt-2 text-sm text-slate-900">
@@ -257,20 +257,20 @@ export function LandingPage() {
                     </div>
                   </div>
                   <div className="grid gap-4 text-sm text-slate-900 sm:grid-cols-2">
-                    <div className="rounded-xl border border-white/15 bg-slate-950/30 p-4">
+                    <div className="rounded-xl border border-white/15 bg-blue-500/20 p-4">
                       <p className="text-slate-900">Content ideas planned</p>
                       <p className="mt-2 text-lg font-outfit text-slate-900">30+</p>
                     </div>
-                    <div className="rounded-xl border border-white/15 bg-slate-950/30 p-4">
+                    <div className="rounded-xl border border-white/15 bg-blue-500/20 p-4">
                       <p className="text-slate-900">Human approved</p>
                       <p className="mt-2 text-lg font-outfit text-slate-900">Always in control</p>
                     </div>
                   </div>
                 </div>
               </Card>
-              <div className="absolute -bottom-18 -right-18 hidden rounded-2xl border border-white/15 bg-white/85 p-5 text-sm text-slate-900 md:block">
-                <p className="font-outfit text-slate-900">“Social media finally stopped feeling like a chore”</p>
-                <p className="mt-1 text-slate-900">Cafe owner, using LumenIQ </p>
+              <div className="absolute -bottom-18 -right-24 hidden rounded-2xl border border-white/15 bg-white/85 p-5 text-sm text-slate-900 md:block">
+                <p className="font-outfit text-slate-900 text-base">“Social media finally stopped feeling like a chore”</p>
+                <p className="mt-1 text-slate-900 text-base">Cafe owner, using LumenIQ </p>
               </div>
             </div>
           </div>
