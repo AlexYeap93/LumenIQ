@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Upload, Search, Filter, Calendar, Image as ImageIcon, Trash2, Grid, List } from 'lucide-react';
+import { Upload, Search, Calendar, Image as ImageIcon, Trash2, Grid, List, X } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
@@ -122,361 +121,371 @@ export function PhotoStoragePage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">Photo Storage</h2>
-          <p className="text-muted-foreground mt-1">Manage your media library</p>
-        </div>
-        <Button className="gradient-blue-primary text-white hover:opacity-90">
-          <Upload className="w-4 h-4 mr-2" />
-          Upload Photos
-        </Button>
+    <div className="relative min-h-screen text-slate-900 font-switzer">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
+        <div className="absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
       </div>
+      <div className="mx-auto max-w-6xl space-y-8 px-4 pb-16 pt-10">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-outfit text-slate-900">Photo Storage</h2>
+            <p className="text-slate-600">Manage your media library</p>
+          </div>
+          <Button className="gradient-blue-primary text-white hover:opacity-90">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Photos
+          </Button>
+        </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Total Images</div>
-          <div className="text-2xl font-semibold text-foreground mt-1">{photos.length}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">AI Generated</div>
-          <div className="text-2xl font-semibold text-primary mt-1">
-            {photos.filter(p => p.isAIGenerated).length}
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Uploaded</div>
-          <div className="text-2xl font-semibold text-foreground mt-1">
-            {photos.filter(p => !p.isAIGenerated).length}
-          </div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground">Used in Posts</div>
-          <div className="text-2xl font-semibold text-foreground mt-1">
-            {photos.reduce((sum, p) => sum + p.usedInPosts, 0)}
-          </div>
-        </Card>
-      </div>
+        {/* Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm">
+            <div className="text-sm text-slate-600">Total Images</div>
+            <div className="mt-1 text-2xl font-outfit text-slate-900">{photos.length}</div>
+          </Card>
+          <Card className="rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-blue-50 to-slate-50 p-4 shadow-sm">
+            <div className="text-sm text-slate-600">AI Generated</div>
+            <div className="mt-1 text-2xl font-outfit text-blue-700">
+              {photos.filter(p => p.isAIGenerated).length}
+            </div>
+          </Card>
+          <Card className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm">
+            <div className="text-sm text-slate-600">Uploaded</div>
+            <div className="mt-1 text-2xl font-outfit text-slate-900">
+              {photos.filter(p => !p.isAIGenerated).length}
+            </div>
+          </Card>
+          <Card className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm">
+            <div className="text-sm text-slate-600">Used in Posts</div>
+            <div className="mt-1 text-2xl font-outfit text-slate-900">
+              {photos.reduce((sum, p) => sum + p.usedInPosts, 0)}
+            </div>
+          </Card>
+        </div>
 
-      {/* Search and Filters */}
-      <div className="flex gap-3">
-        <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by tags..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-input-background"
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={filterType === 'all' ? 'default' : 'outline'}
-            onClick={() => setFilterType('all')}
-            className={filterType === 'all' ? 'gradient-blue-primary text-white' : ''}
-          >
-            All
-          </Button>
-          <Button
-            variant={filterType === 'ai' ? 'default' : 'outline'}
-            onClick={() => setFilterType('ai')}
-            className={filterType === 'ai' ? 'gradient-blue-primary text-white' : ''}
-          >
-            AI Generated
-          </Button>
-          <Button
-            variant={filterType === 'uploaded' ? 'default' : 'outline'}
-            onClick={() => setFilterType('uploaded')}
-            className={filterType === 'uploaded' ? 'gradient-blue-primary text-white' : ''}
-          >
-            Uploaded
-          </Button>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant={viewMode === 'grid' ? 'default' : 'outline'}
-            onClick={() => setViewMode('grid')}
-            className={viewMode === 'grid' ? 'gradient-blue-primary text-white' : ''}
-          >
-            <Grid className="w-4 h-4" />
-          </Button>
-          <Button
-            variant={viewMode === 'list' ? 'default' : 'outline'}
-            onClick={() => setViewMode('list')}
-            className={viewMode === 'list' ? 'gradient-blue-primary text-white' : ''}
-          >
-            <List className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
+        {/* Search and Filters */}
+        <Card className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Input
+                placeholder="Search by tags..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-white"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={filterType === 'all' ? 'default' : 'outline'}
+                onClick={() => setFilterType('all')}
+                className={filterType === 'all' ? 'gradient-blue-primary text-white' : 'border-slate-200 text-slate-600'}
+              >
+                All
+              </Button>
+              <Button
+                variant={filterType === 'ai' ? 'default' : 'outline'}
+                onClick={() => setFilterType('ai')}
+                className={filterType === 'ai' ? 'gradient-blue-primary text-white' : 'border-slate-200 text-slate-600'}
+              >
+                AI Generated
+              </Button>
+              <Button
+                variant={filterType === 'uploaded' ? 'default' : 'outline'}
+                onClick={() => setFilterType('uploaded')}
+                className={filterType === 'uploaded' ? 'gradient-blue-primary text-white' : 'border-slate-200 text-slate-600'}
+              >
+                Uploaded
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === 'grid' ? 'default' : 'outline'}
+                onClick={() => setViewMode('grid')}
+                className={viewMode === 'grid' ? 'gradient-blue-primary text-white' : 'border-slate-200 text-slate-600'}
+              >
+                <Grid className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'outline'}
+                onClick={() => setViewMode('list')}
+                className={viewMode === 'list' ? 'gradient-blue-primary text-white' : 'border-slate-200 text-slate-600'}
+              >
+                <List className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </Card>
 
       {/* Photo Grid */}
-      {viewMode === 'grid' && (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredPhotos.map((photo, index) => (
-            <motion.div
-              key={photo.id}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.05 }}
-              onClick={() => setSelectedPhoto(photo)}
-              className="group relative aspect-square rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-primary transition-all"
-            >
-              <img
-                src={photo.url}
-                alt={`Photo ${photo.id}`}
-                className="w-full h-full object-cover"
-              />
+        {viewMode === 'grid' && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filteredPhotos.map((photo) => (
+              <div
+                key={photo.id}
+                onClick={() => setSelectedPhoto(photo)}
+                className="group relative aspect-square rounded-2xl overflow-hidden cursor-pointer border border-slate-200/70 bg-white shadow-sm hover:border-blue-500/60 hover:shadow-md transition-all"
+              >
+                <img
+                  src={photo.url}
+                  alt={`Photo ${photo.id}`}
+                  className="w-full h-full object-cover"
+                />
 
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
-                <div className="flex justify-between items-start">
-                  {photo.isAIGenerated && (
-                    <span className="bg-primary text-white text-xs px-2 py-1 rounded-full">
-                      AI
-                    </span>
-                  )}
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeletePhoto(photo.id);
-                    }}
-                    className="text-white hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="text-white text-xs space-y-1">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {formatDate(photo.createdDate)}
+                {/* Overlay */}
+                <div className="absolute inset-0 bg-slate-900/70 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
+                  <div className="flex justify-between items-start">
+                    {photo.isAIGenerated && (
+                      <span className="bg-white/15 text-white text-xs px-2 py-1 rounded-full">
+                        AI
+                      </span>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeletePhoto(photo.id);
+                      }}
+                      className="text-white/80 hover:text-white transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
-                  {photo.usedInPosts > 0 && (
+
+                  <div className="text-white text-xs space-y-1">
                     <div className="flex items-center gap-1">
-                      <ImageIcon className="w-3 h-3" />
-                      Used in {photo.usedInPosts} post{photo.usedInPosts !== 1 ? 's' : ''}
+                      <Calendar className="w-3 h-3" />
+                      {formatDate(photo.createdDate)}
                     </div>
-                  )}
+                    {photo.usedInPosts > 0 && (
+                      <div className="flex items-center gap-1">
+                        <ImageIcon className="w-3 h-3" />
+                        Used in {photo.usedInPosts} post{photo.usedInPosts !== 1 ? 's' : ''}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </motion.div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
       {/* Photo List */}
-      {viewMode === 'list' && (
-        <div className="space-y-3">
-          {filteredPhotos.map((photo, index) => (
-            <motion.div
-              key={photo.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.05 }}
-            >
-              <Card
-                onClick={() => setSelectedPhoto(photo)}
-                className="p-4 cursor-pointer hover:border-primary transition-all"
+        {viewMode === 'list' && (
+          <div className="space-y-3">
+          {filteredPhotos.map((photo) => (
+            <div
+                key={photo.id}
               >
-                <div className="flex items-center gap-6">
-                  {/* Photo Thumbnail */}
-                  <img
-                    src={photo.url}
-                    alt={photo.title}
-                    className="w-24 h-24 rounded-lg object-cover flex-shrink-0"
-                  />
-                  
-                  {/* Photo Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="space-y-1 flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold text-foreground">{photo.title}</h3>
-                          {photo.isAIGenerated && (
-                            <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">
-                              AI
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            <span>Created: {formatDate(photo.createdDate)}</span>
+                <Card
+                  onClick={() => setSelectedPhoto(photo)}
+                  className="rounded-2xl border border-slate-200/70 bg-white/90 p-4 shadow-sm cursor-pointer hover:border-blue-500/60 hover:shadow-md transition-all"
+                >
+                  <div className="flex items-center gap-6">
+                    {/* Photo Thumbnail */}
+                    <img
+                      src={photo.url}
+                      alt={photo.title}
+                      className="w-24 h-24 rounded-xl object-cover flex-shrink-0"
+                    />
+                    
+                    {/* Photo Info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-outfit text-slate-900">{photo.title}</h3>
+                            {photo.isAIGenerated && (
+                              <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">
+                                AI
+                              </span>
+                            )}
                           </div>
-                          <div className="flex items-center gap-1">
-                            <ImageIcon className="w-4 h-4" />
-                            <span>Used in {photo.usedInPosts} post{photo.usedInPosts !== 1 ? 's' : ''}</span>
+                          <div className="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-4 h-4" />
+                              <span>Created: {formatDate(photo.createdDate)}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <ImageIcon className="w-4 h-4" />
+                              <span>Used in {photo.usedInPosts} post{photo.usedInPosts !== 1 ? 's' : ''}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {photo.tags.map(tag => (
+                              <span
+                                key={tag}
+                                className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full text-xs"
+                              >
+                                {tag}
+                              </span>
+                            ))}
                           </div>
                         </div>
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {photo.tags.map(tag => (
-                            <span
-                              key={tag}
-                              className="bg-accent text-accent-foreground px-2 py-0.5 rounded-full text-xs"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
+                        
+                        {/* Actions */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeletePhoto(photo.id);
+                          }}
+                          className="text-slate-500 hover:text-red-500 transition-colors p-2"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
                       </div>
-                      
-                      {/* Actions */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeletePhoto(photo.id);
-                        }}
-                        className="text-muted-foreground hover:text-destructive transition-colors p-2"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
                     </div>
                   </div>
-                </div>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      )}
+                </Card>
+            </div>
+            ))}
+          </div>
+        )}
 
       {/* Empty State */}
-      {filteredPhotos.length === 0 && (
-        <div className="text-center py-12">
-          <ImageIcon className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">No photos found</p>
-        </div>
-      )}
+        {filteredPhotos.length === 0 && (
+          <Card className="rounded-2xl border border-slate-200/70 bg-white/90 p-10 text-center shadow-sm">
+            <ImageIcon className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+            <p className="text-slate-600">No photos found</p>
+          </Card>
+        )}
 
       {/* Photo Detail Modal */}
-      {selectedPhoto && (
-        <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-          onClick={() => setSelectedPhoto(null)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-2xl max-w-4xl w-full overflow-hidden"
+        {selectedPhoto && (
+          <div
+            className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4"
+            onClick={() => setSelectedPhoto(null)}
           >
-            <div className="grid md:grid-cols-2">
-              <img
-                src={selectedPhoto.url}
-                alt="Selected"
-                className="w-full h-full object-cover"
-              />
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-white rounded-3xl max-w-4xl w-full overflow-hidden border border-slate-200/70 shadow-xl"
+          >
+              <button
+                type="button"
+                aria-label="Close photo details"
+                onClick={() => setSelectedPhoto(null)}
+                className="absolute right-4 top-4 z-10 rounded-full border border-slate-200 bg-white/90 p-2 text-slate-600 shadow-sm transition hover:text-slate-900"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className="grid md:grid-cols-2">
+                <div className="p-4 md:p-6">
+                  <div className="h-full w-full rounded-2xl border border-slate-200 bg-white">
+                    <img
+                      src={selectedPhoto.url}
+                      alt="Selected"
+                      className="h-full w-full rounded-xl object-cover"
+                    />
+                  </div>
+                </div>
+                <div className="p-6 space-y-4">
+                  <h3 className="text-xl font-outfit text-slate-900">Photo Details</h3>
+                  
+                  <div className="space-y-3 text-sm text-slate-600">
+                    <div>
+                      <span className="text-slate-500">Created:</span>
+                      <span className="ml-2 text-slate-900">{formatDate(selectedPhoto.createdDate)}</span>
+                    </div>
+                    
+                    {selectedPhoto.scheduledDate && (
+                      <div>
+                        <span className="text-slate-500">Scheduled:</span>
+                        <span className="ml-2 text-slate-900">{formatDate(selectedPhoto.scheduledDate)}</span>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <span className="text-slate-500">Type:</span>
+                      <span className="ml-2 text-slate-900">
+                        {selectedPhoto.isAIGenerated ? 'AI Generated' : 'Uploaded'}
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <span className="text-slate-500">Used in:</span>
+                      <span className="ml-2 text-slate-900">
+                        {selectedPhoto.usedInPosts} post{selectedPhoto.usedInPosts !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    
+                    <div>
+                      <span className="text-slate-500">Tags:</span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedPhoto.tags.map(tag => (
+                          <span
+                            key={tag}
+                            className="bg-blue-50 text-blue-700 px-2 py-1 rounded-full text-xs"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <Button className="flex-1 gradient-blue-primary text-white hover:opacity-90" onClick={handleUseInPost}>
+                      Use in Post
+                    </Button>
+                    <Button variant="outline" className="border-slate-200 text-slate-600 hover:text-slate-900">
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              </div>
+          </div>
+          </div>
+        )}
+
+      {/* Date Picker Modal */}
+        {showDatePicker && (
+          <div
+            className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowDatePicker(false)}
+          >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="bg-white rounded-3xl max-w-lg w-full overflow-hidden border border-slate-200/70 shadow-xl"
+          >
               <div className="p-6 space-y-4">
-                <h3 className="text-lg font-semibold">Photo Details</h3>
+                <h3 className="text-xl font-outfit text-slate-900">Schedule Post</h3>
                 
                 <div className="space-y-3 text-sm">
                   <div>
-                    <span className="text-muted-foreground">Created:</span>
-                    <span className="ml-2 text-foreground">{formatDate(selectedPhoto.createdDate)}</span>
-                  </div>
-                  
-                  {selectedPhoto.scheduledDate && (
-                    <div>
-                      <span className="text-muted-foreground">Scheduled:</span>
-                      <span className="ml-2 text-foreground">{formatDate(selectedPhoto.scheduledDate)}</span>
-                    </div>
-                  )}
-                  
-                  <div>
-                    <span className="text-muted-foreground">Type:</span>
-                    <span className="ml-2 text-foreground">
-                      {selectedPhoto.isAIGenerated ? 'AI Generated' : 'Uploaded'}
-                    </span>
+                    <Label className="text-slate-600">Date:</Label>
+                    <Input
+                      type="date"
+                      value={selectedDate}
+                      onChange={(e) => setSelectedDate(e.target.value)}
+                      className="w-full bg-white"
+                    />
                   </div>
                   
                   <div>
-                    <span className="text-muted-foreground">Used in:</span>
-                    <span className="ml-2 text-foreground">
-                      {selectedPhoto.usedInPosts} post{selectedPhoto.usedInPosts !== 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  
-                  <div>
-                    <span className="text-muted-foreground">Tags:</span>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {selectedPhoto.tags.map(tag => (
-                        <span
-                          key={tag}
-                          className="bg-accent text-accent-foreground px-2 py-1 rounded-full text-xs"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
+                    <Label className="text-slate-600">Time:</Label>
+                    <Input
+                      type="time"
+                      value={selectedTime}
+                      onChange={(e) => setSelectedTime(e.target.value)}
+                      className="w-full bg-white"
+                    />
                   </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
-                  <Button className="flex-1" onClick={handleUseInPost}>
-                    Use in Post
+                  <Button className="flex-1 gradient-blue-primary text-white hover:opacity-90" onClick={handleSchedulePost}>
+                    Schedule
                   </Button>
-                  <Button variant="outline">
-                    Download
+                  <Button variant="outline" className="border-slate-200 text-slate-600 hover:text-slate-900" onClick={() => setShowDatePicker(false)}>
+                    Cancel
                   </Button>
                 </div>
               </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
-
-      {/* Date Picker Modal */}
-      {showDatePicker && (
-        <div
-          className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowDatePicker(false)}
-        >
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            onClick={(e) => e.stopPropagation()}
-            className="bg-card rounded-2xl max-w-4xl w-full overflow-hidden"
-          >
-            <div className="p-6 space-y-4">
-              <h3 className="text-lg font-semibold">Schedule Post</h3>
-              
-              <div className="space-y-3 text-sm">
-                <div>
-                  <Label>Date:</Label>
-                  <Input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                
-                <div>
-                  <Label>Time:</Label>
-                  <Input
-                    type="time"
-                    value={selectedTime}
-                    onChange={(e) => setSelectedTime(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <Button className="flex-1" onClick={handleSchedulePost}>
-                  Schedule
-                </Button>
-                <Button variant="outline" onClick={() => setShowDatePicker(false)}>
-                  Cancel
-                </Button>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      )}
+          </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
