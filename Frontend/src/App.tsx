@@ -27,7 +27,7 @@ function AppContent() {
         />
         <Route 
           path="/signup" 
-          element={<SignupPage onSignup={() => signup('mock-user@lumeniq.local', 'mock-token')} />} 
+          element={<SignupPage onSignup={() => signup('email@email.com', 'mock-token')} />} 
         />
         
         {/* Protected routes */}
