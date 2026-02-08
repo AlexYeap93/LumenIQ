@@ -115,7 +115,7 @@ export function ShellLayout({ children }: ShellLayoutProps) {
         </div>
 
         {/* Navigation Items */}
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto bg">
+        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
             <motion.button
               key={item.id}
