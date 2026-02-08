@@ -5,6 +5,7 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/LumenIQ Logo.png';
+import { ArrowLeftIcon } from 'lucide-react';
 
 interface LoginPageProps {
   onLogin: (email: string) => void;
@@ -28,6 +29,12 @@ export function LoginPage({ onLogin }: LoginPageProps) {
         <div className="absolute inset-0 bg-slate-950" />
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-slate-950 to-slate-950" />
         <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl" />
+      </div>
+      <div className="fixed top-4 left-4 w-fit h-fit z-10">
+        <Button onClick={() => navigate('/')} className="bg-white/85 text-slate-900 hover:bg-white/90">
+          <ArrowLeftIcon className="w-4 h-4" />
+          Back
+        </Button>
       </div>
       <div className="relative mx-auto flex min-h-screen max-w-6xl items-center justify-center px-4 py-12 font-switzer sm:px-6">
         <Card className="w-full max-w-md space-y-6 border-white/15 bg-white/85 p-8 text-slate-900 shadow-xl backdrop-blur">

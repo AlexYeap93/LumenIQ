@@ -135,7 +135,7 @@ export function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white/10 text-slate-900">
+    <div className="min-h-screen bg-white/10 text-slate-900 no-scrollbar">
       <div className="relative text-white">
         <div className="pointer-events-none fixed inset-0 -z-10">
           <div
@@ -146,7 +146,7 @@ export function LandingPage() {
           />
           <div className="absolute inset-0 bg-slate-950/55" aria-hidden="true" />
         </div>
-        <header className="sticky top-0 z-40 sm:backdrop-blur font-switzer pt-8 pb-4">
+        <header className="sm:backdrop-blur font-switzer pt-8 pb-4">
           <div className="relative mx-auto flex max-w-6xl xl:max-w-[88rem] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
             <div className="flex items-center gap-3">
               <img src={logoImage} alt="LumenIQ" className="hidden h-9 w-auto" />
@@ -180,7 +180,7 @@ export function LandingPage() {
               </Button>
             </div>
             {isMobileNavOpen && (
-              <div className="absolute left-4 right-4 top-full mt-3 rounded-2xl border border-white/15 bg-slate-950/95 p-5 text-white shadow-xl md:hidden">
+              <div className="absolute left-4 right-4 top-full mt-3 rounded-2xl border border-white/15 bg-slate-950/95 p-5 text-white shadow-xl md:hidden z-50">
                 <nav className="flex flex-col gap-4 text-base">
                   <a href="#product" className="hover:text-white" onClick={() => setIsMobileNavOpen(false)}>Product</a>
                   <a href="#how-it-works" className="hover:text-white" onClick={() => setIsMobileNavOpen(false)}>How it works</a>
