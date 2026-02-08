@@ -186,7 +186,7 @@ export function SettingsPage() {
         <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
         <div className="absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
       </div>
-      <div className="mx-auto max-w-6xl space-y-8 px-4 pb-16 pt-10 font-switzer">
+      <div className="mx-auto max-w-[88rem] space-y-8 px-4 pb-16 pt-10 font-switzer">
         <div className="space-y-2">
           <h2 className="text-3xl font-outfit text-slate-900">Business Preferences</h2>
           <p className="text-slate-600">Manage your account and business preferences</p>

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { CalendarView } from '../components/CalendarView';
-import { PostModal } from '../components/PostModal';
-import { PostDetailModal } from '../components/PostDetailModal';
-import { PostListModal } from '../components/PostListModal';
+import { PostModal } from '../modals/PostModal';
+import { PostDetailModal } from '../modals/PostDetailModal';
+import { PostListModal } from '../modals/PostListModal';
 import { Plus, Calendar, FileText } from 'lucide-react';
 
 interface Post {
@@ -116,97 +116,103 @@ export function CalendarPage() {
   const draftPosts = posts.filter(p => p.status === 'draft');
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">Content Calendar</h2>
-          <p className="text-muted-foreground mt-1">Plan and schedule your social media content</p>
-        </div>
-        <Button
-          onClick={() => handleCreatePost(new Date())}
-          className="gradient-blue-primary text-white hover:opacity-90"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Post
-        </Button>
+    <div className="relative min-h-screen text-slate-900 font-switzer">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
+        <div className="absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
       </div>
-
-      {/* Filter Buttons */}
-      <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          onClick={() => handleShowList('scheduled')}
-          className="flex items-center gap-2 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
-        >
-          <Calendar className="w-4 h-4" />
-          Scheduled ({scheduledPosts.length})
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => handleShowList('draft')}
-          className="flex items-center gap-2 hover:bg-muted hover:text-muted-foreground"
-        >
-          <FileText className="w-4 h-4" />
-          Drafts ({draftPosts.length})
-        </Button>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Total Posts</div>
-          <div className="text-2xl font-semibold text-foreground mt-1">{posts.length}</div>
+      <div className="mx-auto max-w-[96rem] space-y-8 px-4 pb-16 pt-10">
+        {/* Header */}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-outfit text-slate-900">Content Calendar</h2>
+            <p className="text-slate-600">Plan and schedule your social media content</p>
+          </div>
+          <Button
+            onClick={() => handleCreatePost(new Date())}
+            className="gradient-blue-primary text-white shadow-sm hover:opacity-90"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create Post
+          </Button>
         </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Scheduled</div>
-          <div className="text-2xl font-semibold text-destructive mt-1">
-            {scheduledPosts.length}
+
+        {/* Filter Buttons */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            variant="outline"
+            onClick={() => handleShowList('scheduled')}
+            className="flex items-center gap-2 border-slate-200/70 bg-white/90 text-slate-700 shadow-sm hover:border-blue-200 hover:bg-blue-50/40 hover:text-blue-600"
+          >
+            <Calendar className="w-4 h-4" />
+            Scheduled ({scheduledPosts.length})
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleShowList('draft')}
+            className="flex items-center gap-2 border-slate-200/70 bg-white/90 text-slate-700 shadow-sm hover:bg-slate-50 hover:text-slate-900"
+          >
+            <FileText className="w-4 h-4" />
+            Drafts ({draftPosts.length})
+          </Button>
+        </div>
+
+        {/* Statistics */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Total Posts</div>
+            <div className="mt-2 text-3xl font-outfit text-slate-900">{posts.length}</div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Scheduled</div>
+            <div className="mt-2 text-3xl font-outfit text-blue-600">
+              {scheduledPosts.length}
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200/70 bg-white/90 p-5 shadow-sm">
+            <div className="text-sm text-slate-500">Drafts</div>
+            <div className="mt-2 text-3xl font-outfit text-slate-600">
+              {draftPosts.length}
+            </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Drafts</div>
-          <div className="text-2xl font-semibold text-muted-foreground mt-1">
-            {draftPosts.length}
-          </div>
-        </div>
+
+        {/* Calendar */}
+        <CalendarView
+          posts={posts}
+          onPostClick={handlePostClick}
+          onCreatePost={handleCreatePost}
+        />
+
+        {/* Post Modal */}
+        <PostModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          selectedDate={selectedDate}
+          posts={selectedPosts}
+          onSavePost={handleSavePost}
+          onUpdatePost={handleUpdatePost}
+          onDeletePost={handleDeletePost}
+        />
+
+        {/* Post Detail Modal */}
+        <PostDetailModal
+          isOpen={isPostDetailModalOpen}
+          onClose={() => setIsPostDetailModalOpen(false)}
+          post={selectedPost}
+          onUpdatePost={handleUpdatePost}
+          onDeletePost={handleDeletePost}
+        />
+
+        {/* Post List Modal */}
+        <PostListModal
+          isOpen={isListModalOpen}
+          onClose={() => setIsListModalOpen(false)}
+          posts={listFilter === 'scheduled' ? scheduledPosts : draftPosts}
+          filter={listFilter}
+          onPostClick={handlePostClick}
+        />
       </div>
-
-      {/* Calendar */}
-      <CalendarView
-        posts={posts}
-        onPostClick={handlePostClick}
-        onCreatePost={handleCreatePost}
-      />
-
-      {/* Post Modal */}
-      <PostModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        selectedDate={selectedDate}
-        posts={selectedPosts}
-        onSavePost={handleSavePost}
-        onUpdatePost={handleUpdatePost}
-        onDeletePost={handleDeletePost}
-      />
-
-      {/* Post Detail Modal */}
-      <PostDetailModal
-        isOpen={isPostDetailModalOpen}
-        onClose={() => setIsPostDetailModalOpen(false)}
-        post={selectedPost}
-        onUpdatePost={handleUpdatePost}
-        onDeletePost={handleDeletePost}
-      />
-
-      {/* Post List Modal */}
-      <PostListModal
-        isOpen={isListModalOpen}
-        onClose={() => setIsListModalOpen(false)}
-        posts={listFilter === 'scheduled' ? scheduledPosts : draftPosts}
-        filter={listFilter}
-        onPostClick={handlePostClick}
-      />
     </div>
   );
 }

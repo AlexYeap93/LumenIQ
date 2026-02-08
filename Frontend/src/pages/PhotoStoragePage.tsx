@@ -126,7 +126,7 @@ export function PhotoStoragePage() {
         <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
         <div className="absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
       </div>
-      <div className="mx-auto max-w-6xl space-y-8 px-4 pb-16 pt-10">
+      <div className="mx-auto max-w-[96rem] space-y-8 px-4 pb-16 pt-10">
         {/* Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-2">
