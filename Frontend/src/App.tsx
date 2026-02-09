@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from './components/ui/sonner';
 import { store } from './shell/store';
@@ -26,7 +26,7 @@ function AppContent() {
         />
         <Route 
           path="/signup" 
-          element={<SignupPage onSignup={(email) => signup(email, 'mock-token')} />} 
+          element={<SignupPage onSignup={() => signup('mock@example.com', 'mock-token')} />} 
         />
         
         {/* Protected routes */}

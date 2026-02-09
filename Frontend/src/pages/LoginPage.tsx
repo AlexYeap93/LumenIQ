@@ -7,7 +7,7 @@ import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/LumenIQ Logo.png';
 
 interface LoginPageProps {
-  onLogin: () => void;
+  onLogin: (email: string) => void;
 }
 
 export function LoginPage({ onLogin }: LoginPageProps) {
@@ -18,7 +18,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Mock login - in production this would use Firebase auth
-    onLogin();
+    onLogin(email);
     navigate('/app/dashboard');
   };
 
