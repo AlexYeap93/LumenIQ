@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from './components/ui/sonner';
@@ -6,6 +5,7 @@ import { store } from './shell/store';
 import { ShellLayout } from './shell/layouts/ShellLayout';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
+import { LandingPage } from './pages/LandingPage';
 import { OnboardingWizard } from './pages/OnboardingWizard';
 import { ChatbotPage } from './pages/ChatbotPage';
 import { CalendarPage } from './pages/CalendarPage';
@@ -20,13 +20,14 @@ function AppContent() {
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
+        <Route path="/" element={<LandingPage />} />
         <Route 
           path="/login" 
-          element={<LoginPage onLogin={(email) => login(email, 'mock-token')} />} 
+          element={<LoginPage onLogin={(email: string) => login(email, 'mock-token')} />} 
         />
         <Route 
           path="/signup" 
-          element={<SignupPage onSignup={() => signup('mock@example.com', 'mock-token')} />} 
+          element={<SignupPage onSignup={() => signup('email@email.com', 'mock-token')} />} 
         />
         
         {/* Protected routes */}
@@ -56,7 +57,7 @@ function AppContent() {
         {/* Default redirect */}
         <Route 
           path="*" 
-          element={<Navigate to={isAuthenticated ? "/app/dashboard" : "/login"} replace />} 
+          element={<Navigate to={isAuthenticated ? "/app/dashboard" : "/"} replace />} 
         />
       </Routes>
     </BrowserRouter>

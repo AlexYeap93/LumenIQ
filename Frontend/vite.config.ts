@@ -55,6 +55,9 @@ const produceSingleFile = process.env.SINGLE_FILE === 'true'
 
 // https://vite.dev/config/
 export default defineConfig({
+  server: {
+    port: 5176,
+  },
   plugins: [
     react(), 
     tailwindcss(), 

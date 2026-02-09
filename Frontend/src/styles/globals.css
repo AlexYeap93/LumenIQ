@@ -79,6 +79,16 @@
 }
 
 @theme inline {
+  --font-switzer: "Switzer-Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-switzerlight: "Switzer-Light", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-switzermedium: "Switzer-Medium", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-switzerbold: "Switzer-Bold", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-outfit: "Outfit-Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-outfitlight: "Outfit-Light", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-outfitmedium: "Outfit-Medium", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-outfitbold: "Outfit-Bold", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-outfitextrabold: "Outfit-ExtraBold", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-outfitblack: "Outfit-Black", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -125,7 +135,7 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 }
 

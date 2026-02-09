@@ -1,13 +1,10 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
 import { 
   User, 
   Bell, 
   CreditCard, 
   Building, 
-  Palette,
   MapPin,
-  ChevronRight,
   Plus,
   Trash2,
   Check
@@ -19,6 +16,10 @@ import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Switch } from '../components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
+import { Skeleton } from '../components/ui/skeleton';
+import { AddBusinessModal } from '../modals/AddBusinessModal';
+import { PlanSelectionModal } from '../modals/PlanSelectionModal';
+import { PaymentMethodModal } from '../modals/PaymentMethodModal';
 
 interface Business {
   id: string;
@@ -34,7 +35,7 @@ interface Business {
 export function SettingsPage() {
   const currentPlan = {
     name: 'Growth',
-    price: 119,
+    price: 139,
     type: 'Digital Business',
     billingPeriod: 'monthly',
     maxBrands: 5,
@@ -71,7 +72,7 @@ export function SettingsPage() {
   ]);
 
   const [activeBusiness, setActiveBusiness] = useState(businesses[0]);
-  const [showAddBusiness, setShowAddBusiness] = useState(false);
+  const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
   const [newBusiness, setNewBusiness] = useState<Partial<Business>>({
     name: '',
     description: '',
@@ -94,6 +95,17 @@ export function SettingsPage() {
     email: 'john@example.com',
     phone: '+1 (555) 123-4567'
   });
+
+  const [isEditingBusiness, setIsEditingBusiness] = useState(false);
+  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
+  const [isSavingBusiness, setIsSavingBusiness] = useState(false);
+  const [isSavingPersonal, setIsSavingPersonal] = useState(false);
+  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
+  const currentPlanId = `${
+    currentPlan.type.toLowerCase().includes('digital') ? 'digital' : 'physical'
+  }-${currentPlan.name.toLowerCase()}`;
 
   const canAddMoreBrands = businesses.length < currentPlan.maxBrands;
 
@@ -128,7 +140,7 @@ export function SettingsPage() {
       brandColor: '#3b82f6',
       location: ''
     });
-    setShowAddBusiness(false);
+    setIsAddBusinessOpen(false);
   };
 
   const handleDeleteBusiness = (id: string) => {
@@ -152,49 +164,82 @@ export function SettingsPage() {
     ));
   };
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-semibold text-foreground">Settings</h2>
-        <p className="text-muted-foreground mt-1">Manage your account and business preferences</p>
-      </div>
+  const handleSaveBusiness = () => {
+    setIsEditingBusiness(false);
+    setIsSavingBusiness(true);
+    window.setTimeout(() => {
+      setIsSavingBusiness(false);
+    }, 1600);
+  };
 
-      <Tabs defaultValue="businesses" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-          <TabsTrigger value="businesses" className="flex items-center gap-2">
+  const handleSavePersonal = () => {
+    setIsEditingPersonal(false);
+    setIsSavingPersonal(true);
+    window.setTimeout(() => {
+      setIsSavingPersonal(false);
+    }, 1600);
+  };
+
+  return (
+    <div className="relative min-h-screen text-slate-900 font-switzer">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 right-0 h-72 w-72 rounded-full bg-blue-200/40 blur-3xl" />
+        <div className="absolute -bottom-24 left-0 h-72 w-72 rounded-full bg-slate-200/50 blur-3xl" />
+      </div>
+      <div className="mx-auto max-w-[88rem] space-y-8 px-4 pb-16 pt-10 font-switzer">
+        <div className="space-y-2">
+          <h2 className="text-3xl font-outfit text-slate-900">Business Preferences</h2>
+          <p className="text-slate-600">Manage your account and business preferences</p>
+        </div>
+
+        <Tabs defaultValue="businesses" className="space-y-6">
+          <TabsList className="w-full flex justify-between rounded-2xl border border-slate-200/70 bg-white/80 shadow-sm lg:w-auto">
+            <TabsTrigger
+              value="businesses"
+              className="flex items-center rounded-xl text-sm  text-slate-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
             <Building className="w-4 h-4" />
             <span className="hidden sm:inline">Businesses</span>
-          </TabsTrigger>
-          <TabsTrigger value="account" className="flex items-center gap-2">
+            </TabsTrigger>
+            <TabsTrigger
+              value="account"
+              className="flex items-center rounded-xl text-sm  text-slate-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
             <User className="w-4 h-4" />
             <span className="hidden sm:inline">Account</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
+            </TabsTrigger>
+            <TabsTrigger
+              value="notifications"
+              className="flex items-center rounded-xl text-sm  text-slate-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
             <Bell className="w-4 h-4" />
             <span className="hidden sm:inline">Notifications</span>
-          </TabsTrigger>
-          <TabsTrigger value="billing" className="flex items-center gap-2">
+            </TabsTrigger>
+            <TabsTrigger
+              value="billing"
+              className="flex items-center rounded-xl text-sm  text-slate-600 data-[state=active]:bg-blue-600 data-[state=active]:text-white"
+            >
             <CreditCard className="w-4 h-4" />
             <span className="hidden sm:inline">Billing</span>
-          </TabsTrigger>
-        </TabsList>
+            </TabsTrigger>
+          </TabsList>
 
         {/* Businesses Tab */}
         <TabsContent value="businesses" className="space-y-6">
           {/* Current Plan Info */}
-          <Card className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950 dark:to-indigo-950 border-primary/20">
+          <Card className="p-6 rounded-2xl border border-blue-100/80 bg-gradient-to-br from-white via-blue-50 to-slate-50 shadow-sm">
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <h3 className="text-lg font-semibold text-foreground">{currentPlan.name} Plan</h3>
-                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-primary text-white">
+                  <h3 className="text-lg font-outfit text-slate-900">{currentPlan.name} Plan</h3>
+                  <span className="px-2 py-0.5 rounded-full text-xs  bg-blue-600 text-white">
                     {currentPlan.type}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">
+                <p className="text-sm text-slate-600 mb-3">
                   Using {businesses.length} of {currentPlan.maxBrands} available brands
                 </p>
-                <div className="w-full bg-background/50 rounded-full h-2">
+                <div className="w-full bg-slate-200/60 rounded-full h-2">
                   <div 
                     className="gradient-blue-primary h-2 rounded-full transition-all"
                     style={{ width: `${(businesses.length / currentPlan.maxBrands) * 100}%` }}
@@ -202,66 +247,27 @@ export function SettingsPage() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-2xl font-bold text-foreground">${currentPlan.price}</div>
-                <div className="text-sm text-muted-foreground">/month</div>
+                <div className="text-2xl font-outfit text-slate-900">${currentPlan.price}</div>
+                <div className="text-sm text-slate-600">/month</div>
               </div>
             </div>
           </Card>
 
-          {/* Business Selector */}
-          <Card className="p-6">
+          {/* Select or Add Business */}
+          <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Your Businesses</h3>
+              <h3 className="text-lg font-outfit text-slate-900">Your Businesses</h3>
               {canAddMoreBrands && (
                 <Button
-                  onClick={() => setShowAddBusiness(!showAddBusiness)}
+                  onClick={() => setIsAddBusinessOpen(true)}
                   size="sm"
-                  className="gradient-blue-primary text-white hover:opacity-90"
+                  className="gradient-blue-primary text-white hover:opacity-90 shadow-sm"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Business
                 </Button>
               )}
             </div>
-
-            {/* Add New Business Form */}
-            {showAddBusiness && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mb-6 p-4 border border-border rounded-lg bg-muted/30"
-              >
-                <h4 className="font-medium text-foreground mb-4">Add New Business</h4>
-                <div className="space-y-3">
-                  <div>
-                    <Label htmlFor="newBusinessName">Business Name</Label>
-                    <Input
-                      id="newBusinessName"
-                      value={newBusiness.name}
-                      onChange={(e) => setNewBusiness({ ...newBusiness, name: e.target.value })}
-                      placeholder="My New Business"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="newBusinessDesc">Description</Label>
-                    <Input
-                      id="newBusinessDesc"
-                      value={newBusiness.description}
-                      onChange={(e) => setNewBusiness({ ...newBusiness, description: e.target.value })}
-                      placeholder="Brief description"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleAddBusiness} size="sm" className="gradient-blue-primary text-white">
-                      Add Business
-                    </Button>
-                    <Button onClick={() => setShowAddBusiness(false)} size="sm" variant="outline">
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
 
             {/* Business List */}
             <div className="space-y-2">
@@ -271,28 +277,28 @@ export function SettingsPage() {
                   onClick={() => handleSwitchBusiness(business)}
                   className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
                     business.isActive
-                      ? 'border-primary bg-accent'
-                      : 'border-border hover:border-primary/50'
+                      ? 'border-blue-500/70 bg-blue-50/70 shadow-sm'
+                      : 'border-slate-200 bg-white/80 hover:border-blue-300'
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-3">
                       <div
-                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-semibold"
+                        className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-outfit"
                         style={{ backgroundColor: business.brandColor }}
                       >
                         {business.name.charAt(0)}
                       </div>
                       <div>
-                        <div className="font-semibold text-foreground flex items-center gap-2">
+                        <div className="font-outfit text-slate-900 flex items-center gap-2">
                           {business.name}
                           {business.isActive && (
-                            <Check className="w-4 h-4 text-primary" />
+                            <Check className="w-4 h-4 text-blue-600" />
                           )}
                         </div>
-                        <p className="text-sm text-muted-foreground">{business.description}</p>
+                        <p className="text-sm text-slate-600">{business.description}</p>
                         {business.location && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
                             <MapPin className="w-3 h-3" />
                             {business.location}
                           </div>
@@ -305,7 +311,7 @@ export function SettingsPage() {
                           e.stopPropagation();
                           handleDeleteBusiness(business.id);
                         }}
-                        className="text-destructive hover:bg-destructive/10 p-2 rounded"
+                        className="text-rose-600 hover:bg-rose-50 p-2 rounded"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -316,156 +322,246 @@ export function SettingsPage() {
             </div>
 
             {!canAddMoreBrands && (
-              <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border">
-                <p className="text-sm text-muted-foreground">
+              <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                <p className="text-sm text-slate-600">
                   You've reached the maximum number of businesses for your plan. 
-                  <button className="text-primary hover:underline ml-1">Upgrade to add more.</button>
+                  <button className="text-blue-600 hover:underline ml-1">Upgrade to add more.</button>
                 </p>
               </div>
             )}
           </Card>
 
-          {/* Active Business Settings */}
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">
-              {activeBusiness.name} Settings
-            </h3>
+          {/* Selected Business Settings */}
+          <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <h3 className="text-lg font-outfit text-slate-900">
+                {activeBusiness.name} Settings
+              </h3>
+              {!isEditingBusiness && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-200 text-slate-700 hover:bg-slate-50"
+                  onClick={() => setIsEditingBusiness(true)}
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name</Label>
+                <Label htmlFor="businessName" className="text-slate-700">Business Name</Label>
                 <Input
                   id="businessName"
                   value={activeBusiness.name}
                   onChange={(e) => handleUpdateBusiness('name', e.target.value)}
+                  disabled={!isEditingBusiness}
+                  className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="businessDescription">Description</Label>
+                <Label htmlFor="businessDescription" className="text-slate-700">Description</Label>
                 <Textarea
                   id="businessDescription"
                   value={activeBusiness.description}
                   onChange={(e) => handleUpdateBusiness('description', e.target.value)}
-                  className="min-h-20"
+                  disabled={!isEditingBusiness}
+                  className="min-h-20 border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="websiteUrl">Website URL</Label>
+                  <Label htmlFor="websiteUrl" className="text-slate-700">Website URL</Label>
                   <Input
                     id="websiteUrl"
                     type="url"
                     value={activeBusiness.websiteUrl}
                     onChange={(e) => handleUpdateBusiness('websiteUrl', e.target.value)}
                     placeholder="https://example.com"
+                    disabled={!isEditingBusiness}
+                    className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="instagramHandle">Instagram Handle</Label>
+                  <Label htmlFor="instagramHandle" className="text-slate-700">Instagram Handle</Label>
                   <Input
                     id="instagramHandle"
                     value={activeBusiness.instagramHandle}
                     onChange={(e) => handleUpdateBusiness('instagramHandle', e.target.value)}
                     placeholder="@yourbusiness"
+                    disabled={!isEditingBusiness}
+                    className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="brandColor">Brand Color</Label>
+                  <Label htmlFor="brandColor" className="text-slate-700">Brand Color</Label>
                   <div className="flex gap-2">
                     <Input
                       id="brandColor"
                       type="color"
                       value={activeBusiness.brandColor}
                       onChange={(e) => handleUpdateBusiness('brandColor', e.target.value)}
-                      className="w-16 h-10 p-1 cursor-pointer"
+                      disabled={!isEditingBusiness}
+                      className="w-16 h-10 p-1 cursor-pointer border-slate-200 bg-white/90 disabled:cursor-not-allowed"
                     />
                     <Input
                       value={activeBusiness.brandColor}
                       onChange={(e) => handleUpdateBusiness('brandColor', e.target.value)}
                       placeholder="#3b82f6"
+                      disabled={!isEditingBusiness}
+                      className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="location">Location</Label>
+                  <Label htmlFor="location" className="text-slate-700">Location</Label>
                   <Input
                     id="location"
                     value={activeBusiness.location}
                     onChange={(e) => handleUpdateBusiness('location', e.target.value)}
                     placeholder="City, Country"
+                    disabled={!isEditingBusiness}
+                    className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                   />
                 </div>
               </div>
 
-              <Button className="gradient-blue-primary text-white hover:opacity-90">
-                Save Changes
-              </Button>
+              {isEditingBusiness && (
+                <Button
+                  className="gradient-blue-primary text-white hover:opacity-90 shadow-sm"
+                  onClick={handleSaveBusiness}
+                >
+                  Save Changes
+                </Button>
+              )}
+
+              {isSavingBusiness && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4">
+                  <div className="text-sm  text-slate-700">Updating client info</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-4 w-5/6" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
         </TabsContent>
 
         {/* Account Tab */}
         <TabsContent value="account" className="space-y-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Personal Information</h3>
+          <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+            <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+              <h3 className="text-lg font-outfit text-slate-900">Personal Information</h3>
+              {!isEditingPersonal && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-200 text-slate-700 hover:bg-slate-50"
+                  onClick={() => setIsEditingPersonal(true)}
+                >
+                  Edit
+                </Button>
+              )}
+            </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="firstName" className="text-slate-700">First Name</Label>
                   <Input
                     id="firstName"
                     value={personalInfo.firstName}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, firstName: e.target.value })}
+                    disabled={!isEditingPersonal}
+                    className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
+                  <Label htmlFor="lastName" className="text-slate-700">Last Name</Label>
                   <Input
                     id="lastName"
                     value={personalInfo.lastName}
                     onChange={(e) => setPersonalInfo({ ...personalInfo, lastName: e.target.value })}
+                    disabled={!isEditingPersonal}
+                    className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-slate-700">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={personalInfo.email}
                   onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
+                  disabled={!isEditingPersonal}
+                  className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone</Label>
+                <Label htmlFor="phone" className="text-slate-700">Phone</Label>
                 <Input
                   id="phone"
                   type="tel"
                   value={personalInfo.phone}
                   onChange={(e) => setPersonalInfo({ ...personalInfo, phone: e.target.value })}
+                  disabled={!isEditingPersonal}
+                  className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
               </div>
 
-              <Button className="gradient-blue-primary text-white hover:opacity-90">
-                Save Changes
-              </Button>
+              {isEditingPersonal && (
+                <Button
+                  className="gradient-blue-primary text-white hover:opacity-90 shadow-sm"
+                  onClick={handleSavePersonal}
+                >
+                  Save Changes
+                </Button>
+              )}
+
+              {isSavingPersonal && (
+                <div className="space-y-3 rounded-xl border border-slate-200 bg-white/80 p-4">
+                  <div className="text-sm  text-slate-700">Updating client info</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-full" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-4 w-5/6" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Security</h3>
+          <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+            <h3 className="text-lg font-outfit text-slate-900 mb-4">Security</h3>
             <div className="space-y-4">
-              <Button variant="outline">Change Password</Button>
-              <div className="pt-4 border-t border-border">
-                <Button variant="destructive">Delete Account</Button>
+              <Button variant="outline" className="border-slate-200 text-slate-700 hover:bg-slate-50">
+                Change Password
+              </Button>
+              <div className="pt-4 border-t border-slate-200">
+                <Button variant="destructive" className="bg-rose-600 hover:bg-rose-700">
+                  Delete Account
+                </Button>
               </div>
             </div>
           </Card>
@@ -473,17 +569,17 @@ export function SettingsPage() {
 
         {/* Notifications Tab */}
         <TabsContent value="notifications" className="space-y-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Notification Preferences</h3>
+          <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+            <h3 className="text-lg font-outfit text-slate-900 mb-4">Notification Preferences</h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-foreground">Email Notifications</div>
-                  <p className="text-sm text-muted-foreground">Receive updates via email</p>
+                  <div className=" text-slate-900">Email Notifications</div>
+                  <p className="text-sm text-slate-600">Receive updates via email</p>
                 </div>
                 <Switch
                   checked={notifications.emailNotifications}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked: boolean) =>
                     setNotifications({ ...notifications, emailNotifications: checked })
                   }
                 />
@@ -491,12 +587,12 @@ export function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-foreground">Post Reminders</div>
-                  <p className="text-sm text-muted-foreground">Get reminded before posts go live</p>
+                  <div className=" text-slate-900">Post Reminders</div>
+                  <p className="text-sm text-slate-600">Get reminded before posts go live</p>
                 </div>
                 <Switch
                   checked={notifications.postReminders}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked: boolean) =>
                     setNotifications({ ...notifications, postReminders: checked })
                   }
                 />
@@ -504,12 +600,12 @@ export function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-foreground">Weekly Reports</div>
-                  <p className="text-sm text-muted-foreground">Receive weekly performance summaries</p>
+                  <div className=" text-slate-900">Weekly Reports</div>
+                  <p className="text-sm text-slate-600">Receive weekly performance summaries</p>
                 </div>
                 <Switch
                   checked={notifications.weeklyReports}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked: boolean) =>
                     setNotifications({ ...notifications, weeklyReports: checked })
                   }
                 />
@@ -517,12 +613,12 @@ export function SettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-medium text-foreground">AI Suggestions</div>
-                  <p className="text-sm text-muted-foreground">Get AI-powered content recommendations</p>
+                  <div className=" text-slate-900">AI Suggestions</div>
+                  <p className="text-sm text-slate-600">Get AI-powered content recommendations</p>
                 </div>
                 <Switch
                   checked={notifications.aiSuggestions}
-                  onCheckedChange={(checked) =>
+                  onCheckedChange={(checked: boolean) =>
                     setNotifications({ ...notifications, aiSuggestions: checked })
                   }
                 />
@@ -533,50 +629,91 @@ export function SettingsPage() {
 
         {/* Billing Tab */}
         <TabsContent value="billing" className="space-y-6">
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Current Plan</h3>
+          <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+            <h3 className="text-2xl font-outfit text-slate-900">Current Plan:</h3>
             <div className="space-y-4">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between ml-8">
                 <div>
-                  <div className="text-2xl font-bold text-foreground">{currentPlan.name} Plan</div>
-                  <p className="text-muted-foreground mt-1">{currentPlan.type}</p>
+                  <div className="text-xl font-outfit text-slate-900">{currentPlan.name} Plan</div>
+                  <p className="text-slate-600 mt-1">{currentPlan.type}</p>
                   <ul className="mt-3 space-y-2">
                     {currentPlan.features.map((feature, index) => (
-                      <li key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Check className="w-4 h-4 text-primary" />
+                      <li key={index} className="flex items-center gap-2 text-sm text-slate-600">
+                        <Check className="w-4 h-4 text-blue-600" />
                         {feature}
                       </li>
                     ))}
                   </ul>
                 </div>
                 <div className="text-right">
-                  <div className="text-3xl font-bold text-foreground">${currentPlan.price}</div>
-                  <div className="text-sm text-muted-foreground">per month</div>
+                  <div className="text-2xl font-outfit text-slate-900">${currentPlan.price}</div>
+                  <div className="text-sm text-slate-600">per month</div>
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-4">
-                <Button variant="outline">Change Plan</Button>
-                <Button variant="outline" className="text-destructive">Cancel Subscription</Button>
+              <div className="flex gap-2 pt-4 ml-8">
+                <Button
+                  variant="outline"
+                  className="border-slate-200 text-slate-700 hover:bg-slate-50"
+                  onClick={() => setIsPlanModalOpen(true)}
+                >
+                  Change Plan
+                </Button>
+                <Button variant="outline" className="border-slate-200 text-rose-600 hover:bg-rose-50">
+                  Cancel Subscription
+                </Button>
               </div>
             </div>
           </Card>
 
-          <Card className="p-6">
-            <h3 className="text-lg font-semibold text-foreground mb-4">Payment Method</h3>
+          <Card className="p-6 rounded-2xl border border-slate-200/70 bg-white/90 shadow-sm">
+            <h3 className="text-lg font-outfit text-slate-900 mb-4">Payment Method</h3>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-4 border border-border rounded-lg">
-                <CreditCard className="w-8 h-8 text-muted-foreground" />
+              <div className="flex items-center gap-3 p-4 border border-slate-200 rounded-lg bg-white/90">
+                <CreditCard className="w-8 h-8 text-slate-400" />
                 <div className="flex-1">
-                  <div className="font-medium text-foreground">•••• •••• •••• 4242</div>
-                  <p className="text-sm text-muted-foreground">Expires 12/2025</p>
+                  <div className=" text-slate-900">•••• •••• •••• 4242</div>
+                  <p className="text-sm text-slate-600">Expires 12/2025</p>
                 </div>
-                <Button variant="outline" size="sm">Update</Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-slate-200 text-slate-700 hover:bg-slate-50"
+                  onClick={() => setIsPaymentModalOpen(true)}
+                >
+                  Update
+                </Button>
               </div>
             </div>
           </Card>
         </TabsContent>
-      </Tabs>
+        </Tabs>
+
+        <AddBusinessModal
+          open={isAddBusinessOpen}
+          onOpenChange={setIsAddBusinessOpen}
+          value={{
+            name: newBusiness.name || '',
+            description: newBusiness.description || '',
+            websiteUrl: newBusiness.websiteUrl || '',
+            instagramHandle: newBusiness.instagramHandle || '',
+            brandColor: newBusiness.brandColor || '#3b82f6',
+            location: newBusiness.location || ''
+          }}
+          onChange={(updates) => setNewBusiness({ ...newBusiness, ...updates })}
+          onSubmit={handleAddBusiness}
+        />
+        <PlanSelectionModal
+          open={isPlanModalOpen}
+          onOpenChange={setIsPlanModalOpen}
+          currentPlanId={currentPlanId}
+          onSelectPlan={() => setIsPlanModalOpen(false)}
+        />
+        <PaymentMethodModal
+          open={isPaymentModalOpen}
+          onOpenChange={setIsPaymentModalOpen}
+        />
+      </div>
     </div>
   );
 }
