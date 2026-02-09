@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, Plus } from 'lucide-react';
-import { Button } from './ui/button';
-import { Textarea } from './ui/textarea';
-import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { PhotoSelector } from './PhotoSelector';
+import { Button } from '../components/ui/button';
+import { Textarea } from '../components/ui/textarea';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { PhotoSelector } from '../components/PhotoSelector';
 
 interface Post {
   id: string;

@@ -22,7 +22,6 @@ declare global {
   }
 }
 
-
 const showcaseStats = [
   { label: 'To your first content plan', value: '< 10 min' },
   { label: 'Saved Every Month', value: '7-10 hours' },

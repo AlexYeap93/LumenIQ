@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
-import { Button } from './ui/button';
+import { Button } from '../components/ui/button';
 
 interface Post {
   id: string;
