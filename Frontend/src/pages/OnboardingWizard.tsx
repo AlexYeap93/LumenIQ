@@ -12,7 +12,7 @@ import {
   validateName,
   validateRequired,
   validateUrl,
-} from '../signup-onboarding/utils/validation';
+} from '../utils/validation';
 import { toast } from 'sonner';
 import {
   ArrowRight,
@@ -710,7 +710,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 Back
               </Button>
 
-              {/* Desktop step indicator */}
               <div className="hidden lg:flex items-center gap-2">
                 {phases.map(phase => (
                   <div
