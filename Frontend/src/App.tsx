@@ -7,6 +7,7 @@ import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { LandingPage } from './pages/LandingPage';
 import { OnboardingWizard } from './pages/OnboardingWizard';
+import { DashboardPage } from './pages/DashboardPage';
 import { ChatbotPage } from './pages/ChatbotPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { PhotoStoragePage } from './pages/PhotoStoragePage';
@@ -41,7 +42,8 @@ function AppContent() {
                 <ShellLayout>
                   <Routes>
                     <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
-                    <Route path="/dashboard" element={<ChatbotPage />} />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/chat" element={<ChatbotPage />} />
                     <Route path="/calendar" element={<CalendarPage />} />
                     <Route path="/photo-storage" element={<PhotoStoragePage />} />
                     <Route path="/settings" element={<SettingsPage />} />

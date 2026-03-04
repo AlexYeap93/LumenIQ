@@ -1,153 +1,654 @@
 import { useState } from 'react';
+import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
-import { CalendarView } from '../components/CalendarView';
-import { PostModal } from '../components/PostModal';
-import { PostDetailModal } from '../components/PostDetailModal';
-import { Plus } from 'lucide-react';
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+  PieChart,
+  Pie,
+} from 'recharts';
+import {
+  TrendingUp,
+  TrendingDown,
+  Users,
+  Eye,
+  Heart,
+  CalendarDays,
+  Plus,
+  ArrowUpRight,
+  Clock,
+  Send,
+  FileText,
+  Sparkles,
+  Target,
+  MessageCircle,
+  ChevronRight,
+  MoreHorizontal,
+} from 'lucide-react';
 
-interface Post {
-  id: string;
-  image?: string;
-  caption: string;
-  createdDate: Date;
-  scheduledDate?: Date;
-  status: 'draft' | 'scheduled';
+type TimeRange = '7D' | '30D' | '90D';
+
+const audienceGrowth7D = [
+  { date: 'Mon', followers: 24120, impressions: 18400 },
+  { date: 'Tue', followers: 24180, impressions: 21200 },
+  { date: 'Wed', followers: 24250, impressions: 19800 },
+  { date: 'Thu', followers: 24310, impressions: 24600 },
+  { date: 'Fri', followers: 24380, impressions: 22100 },
+  { date: 'Sat', followers: 24460, impressions: 26800 },
+  { date: 'Sun', followers: 24521, impressions: 23400 },
+];
+
+const audienceGrowth30D = [
+  { date: 'Week 1', followers: 22800, impressions: 124000 },
+  { date: 'Week 2', followers: 23200, impressions: 138000 },
+  { date: 'Week 3', followers: 23800, impressions: 142000 },
+  { date: 'Week 4', followers: 24521, impressions: 148200 },
+];
+
+const audienceGrowth90D = [
+  { date: 'Jan', followers: 19400, impressions: 98000 },
+  { date: 'Feb', followers: 21200, impressions: 118000 },
+  { date: 'Mar', followers: 24521, impressions: 148200 },
+];
+
+const engagementByDay = [
+  { day: 'Mon', likes: 342, comments: 89, shares: 56, saves: 124 },
+  { day: 'Tue', likes: 456, comments: 102, shares: 78, saves: 156 },
+  { day: 'Wed', likes: 389, comments: 94, shares: 62, saves: 138 },
+  { day: 'Thu', likes: 521, comments: 134, shares: 91, saves: 189 },
+  { day: 'Fri', likes: 478, comments: 118, shares: 84, saves: 167 },
+  { day: 'Sat', likes: 612, comments: 156, shares: 108, saves: 213 },
+  { day: 'Sun', likes: 534, comments: 128, shares: 92, saves: 178 },
+];
+
+const platformData = [
+  { name: 'Instagram', value: 45, color: '#E1306C', followers: '11.2K', growth: '+4.2%' },
+  { name: 'Facebook', value: 25, color: '#1877F2', followers: '6.1K', growth: '+1.8%' },
+  { name: 'X / Twitter', value: 18, color: '#1DA1F2', followers: '4.4K', growth: '+3.1%' },
+  { name: 'LinkedIn', value: 12, color: '#0A66C2', followers: '2.8K', growth: '+6.5%' },
+];
+
+const upcomingPosts = [
+  {
+    id: '1',
+    title: 'Product Launch Teaser',
+    platform: 'Instagram',
+    scheduledTime: 'Today, 2:00 PM',
+    type: 'image' as const,
+    status: 'ready' as const,
+  },
+  {
+    id: '2',
+    title: 'Weekly Tips Thread',
+    platform: 'X / Twitter',
+    scheduledTime: 'Today, 5:30 PM',
+    type: 'text' as const,
+    status: 'ready' as const,
+  },
+  {
+    id: '3',
+    title: 'Behind the Scenes Reel',
+    platform: 'Instagram',
+    scheduledTime: 'Tomorrow, 10:00 AM',
+    type: 'video' as const,
+    status: 'draft' as const,
+  },
+  {
+    id: '4',
+    title: 'Industry Insights Article',
+    platform: 'LinkedIn',
+    scheduledTime: 'Tomorrow, 1:00 PM',
+    type: 'article' as const,
+    status: 'review' as const,
+  },
+];
+
+const topPosts = [
+  {
+    id: '1',
+    title: 'New Collection Drop',
+    platform: 'Instagram',
+    impressions: '12.4K',
+    engagement: '8.2%',
+    likes: 1024,
+    comments: 89,
+    image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=400&h=300&fit=crop',
+  },
+  {
+    id: '2',
+    title: 'Customer Success Story',
+    platform: 'LinkedIn',
+    impressions: '8.7K',
+    engagement: '6.4%',
+    likes: 556,
+    comments: 134,
+    image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=400&h=300&fit=crop',
+  },
+  {
+    id: '3',
+    title: 'Team Culture Video',
+    platform: 'Facebook',
+    impressions: '6.2K',
+    engagement: '5.1%',
+    likes: 316,
+    comments: 67,
+    image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=400&h=300&fit=crop',
+  },
+];
+
+const recentActivity = [
+  { id: '1', text: 'Instagram post "New Collection" reached 1K impressions', time: '2 min ago', type: 'milestone' as const },
+  { id: '2', text: 'Weekly content plan auto-generated for Mar 10–16', time: '1 hr ago', type: 'ai' as const },
+  { id: '3', text: '"Product Launch Teaser" scheduled for today at 2:00 PM', time: '3 hrs ago', type: 'scheduled' as const },
+  { id: '4', text: 'Engagement rate up 0.8% compared to last week', time: '5 hrs ago', type: 'growth' as const },
+  { id: '5', text: '3 new followers on LinkedIn from Industry Insights post', time: '8 hrs ago', type: 'follower' as const },
+];
+
+const audienceDataMap: Record<TimeRange, typeof audienceGrowth7D> = {
+  '7D': audienceGrowth7D,
+  '30D': audienceGrowth30D,
+  '90D': audienceGrowth90D,
+};
+
+function formatNumber(num: number): string {
+  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+  return num.toString();
+}
+
+function KpiCard({
+  label,
+  value,
+  change,
+  changeLabel,
+  icon,
+  accent,
+}: {
+  label: string;
+  value: string;
+  change: number;
+  changeLabel: string;
+  icon: React.ReactNode;
+  accent: string;
+}) {
+  const isPositive = change >= 0;
+  return (
+    <Card className="relative overflow-hidden border-border/60 bg-card p-5 transition-shadow hover:shadow-md">
+      <div className="flex items-start justify-between">
+        <div className="space-y-3">
+          <p className="text-[13px] font-switzer text-muted-foreground tracking-wide">{label}</p>
+          <p className="text-[28px] leading-none font-outfit text-foreground">{value}</p>
+          <div className="flex items-center gap-1.5">
+            {isPositive ? (
+              <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
+            ) : (
+              <TrendingDown className="h-3.5 w-3.5 text-red-500" />
+            )}
+            <span className={`text-xs font-medium ${isPositive ? 'text-emerald-600' : 'text-red-500'}`}>
+              {isPositive ? '+' : ''}{change}%
+            </span>
+            <span className="text-xs text-muted-foreground">{changeLabel}</span>
+          </div>
+        </div>
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
+          {icon}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function StatusBadge({ status }: { status: 'ready' | 'draft' | 'review' }) {
+  const styles = {
+    ready: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+    draft: 'bg-slate-50 text-slate-600 border-slate-200',
+    review: 'bg-amber-50 text-amber-700 border-amber-200',
+  };
+  const labels = { ready: 'Ready', draft: 'Draft', review: 'In Review' };
+  return (
+    <span className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${styles[status]}`}>
+      {labels[status]}
+    </span>
+  );
+}
+
+function ActivityIcon({ type }: { type: 'milestone' | 'ai' | 'scheduled' | 'growth' | 'follower' }) {
+  const config = {
+    milestone: { bg: 'bg-blue-50', icon: <Target className="h-3.5 w-3.5 text-blue-600" /> },
+    ai: { bg: 'bg-violet-50', icon: <Sparkles className="h-3.5 w-3.5 text-violet-600" /> },
+    scheduled: { bg: 'bg-emerald-50', icon: <Clock className="h-3.5 w-3.5 text-emerald-600" /> },
+    growth: { bg: 'bg-amber-50', icon: <TrendingUp className="h-3.5 w-3.5 text-amber-600" /> },
+    follower: { bg: 'bg-pink-50', icon: <Users className="h-3.5 w-3.5 text-pink-600" /> },
+  };
+  const { bg, icon } = config[type];
+  return (
+    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${bg}`}>
+      {icon}
+    </div>
+  );
+}
+
+function CustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div className="rounded-lg border border-border/60 bg-card px-3 py-2.5 shadow-lg">
+      <p className="mb-1.5 text-xs font-medium text-foreground">{label}</p>
+      {payload.map((entry) => (
+        <div key={entry.name} className="flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+          <span>{entry.name}</span>
+          <span className="ml-auto font-medium text-foreground">{formatNumber(entry.value)}</span>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 export function DashboardPage() {
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: '1',
-      image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=600&h=400&fit=crop',
-      caption: 'Excited to share our new product line! Check out these amazing features. #ProductLaunch #Innovation',
-      createdDate: new Date(2026, 0, 20),
-      scheduledDate: new Date(2026, 0, 25, 14, 0),
-      status: 'scheduled'
-    },
-    {
-      id: '2',
-      caption: 'Behind the scenes at our office. Our team is working hard to bring you the best experience! #TeamWork',
-      createdDate: new Date(2026, 0, 22),
-      status: 'draft'
-    },
-    {
-      id: '3',
-      image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=600&h=400&fit=crop',
-      caption: 'Customer success story: How we helped increase engagement by 200%. Read more on our blog! #CaseStudy',
-      createdDate: new Date(2026, 0, 28),
-      scheduledDate: new Date(2026, 0, 30, 10, 0),
-      status: 'scheduled'
-    }
-  ]);
+  const [timeRange, setTimeRange] = useState<TimeRange>('7D');
+  const audienceData = audienceDataMap[timeRange];
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [selectedPosts, setSelectedPosts] = useState<Post[]>([]);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
-  const [isPostDetailModalOpen, setIsPostDetailModalOpen] = useState(false);
-
-  const handleDateClick = (date: Date, postsForDate: Post[]) => {
-    setSelectedDate(date);
-    setSelectedPosts(postsForDate);
-    setIsModalOpen(true);
-  };
-
-  const handleCreatePost = (date: Date) => {
-    setSelectedDate(date);
-    setSelectedPosts([]);
-    setIsModalOpen(true);
-  };
-
-  const handleSavePost = (postData: Partial<Post>) => {
-    const newPost: Post = {
-      id: Date.now().toString(),
-      caption: postData.caption || '',
-      createdDate: postData.createdDate || new Date(),
-      scheduledDate: postData.scheduledDate,
-      status: postData.status || 'draft',
-      image: postData.image
-    };
-    setPosts([...posts, newPost]);
-  };
-
-  const handleUpdatePost = (postId: string, updates: Partial<Post>) => {
-    setPosts(posts.map(post => 
-      post.id === postId ? { ...post, ...updates } : post
-    ));
-  };
-
-  const handleDeletePost = (postId: string) => {
-    setPosts(posts.filter(post => post.id !== postId));
-  };
-
-  const handlePostClick = (post: Post) => {
-    setSelectedPost(post);
-    setIsPostDetailModalOpen(true);
-  };
+  const currentDate = new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8 font-switzer">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-semibold text-foreground">Content Calendar</h2>
-          <p className="text-muted-foreground mt-1">Plan and schedule your social media content</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="space-y-1">
+          <h1 className="text-[26px] font-outfit text-foreground leading-tight">Dashboard</h1>
+          <p className="text-sm text-muted-foreground">{currentDate}</p>
         </div>
-        <Button
-          onClick={() => handleCreatePost(new Date())}
-          className="gradient-blue-primary text-white hover:opacity-90"
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Create Post
-        </Button>
-      </div>
-
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Total Posts</div>
-          <div className="text-2xl font-semibold text-foreground mt-1">{posts.length}</div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Scheduled</div>
-          <div className="text-2xl font-semibold text-destructive mt-1">
-            {posts.filter(p => p.status === 'scheduled').length}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center rounded-lg border border-border bg-card p-0.5">
+            {(['7D', '30D', '90D'] as TimeRange[]).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-all ${
+                  timeRange === range
+                    ? 'gradient-blue-primary text-white shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {range}
+              </button>
+            ))}
           </div>
-        </div>
-        <div className="bg-card border border-border rounded-lg p-4">
-          <div className="text-sm text-muted-foreground">Drafts</div>
-          <div className="text-2xl font-semibold text-muted-foreground mt-1">
-            {posts.filter(p => p.status === 'draft').length}
-          </div>
+          <Button className="gradient-blue-primary text-white hover:opacity-90 h-8 text-xs gap-1.5">
+            <Plus className="h-3.5 w-3.5" />
+            New Post
+          </Button>
         </div>
       </div>
 
-      {/* Calendar */}
-      <CalendarView
-        posts={posts}
-        onPostClick={handlePostClick}
-        onCreatePost={handleCreatePost}
-      />
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <KpiCard
+          label="Total Followers"
+          value="24,521"
+          change={12.5}
+          changeLabel="vs last period"
+          icon={<Users className="h-5 w-5 text-blue-600" />}
+          accent="bg-blue-50"
+        />
+        <KpiCard
+          label="Impressions"
+          value="148.2K"
+          change={8.3}
+          changeLabel="vs last period"
+          icon={<Eye className="h-5 w-5 text-violet-600" />}
+          accent="bg-violet-50"
+        />
+        <KpiCard
+          label="Engagement Rate"
+          value="4.7%"
+          change={0.8}
+          changeLabel="vs last period"
+          icon={<Heart className="h-5 w-5 text-rose-500" />}
+          accent="bg-rose-50"
+        />
+        <KpiCard
+          label="Scheduled Posts"
+          value="12"
+          change={-2.1}
+          changeLabel="vs last week"
+          icon={<CalendarDays className="h-5 w-5 text-emerald-600" />}
+          accent="bg-emerald-50"
+        />
+      </div>
 
-      {/* Post Modal */}
-      <PostModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        selectedDate={selectedDate}
-        posts={selectedPosts}
-        onSavePost={handleSavePost}
-        onUpdatePost={handleUpdatePost}
-        onDeletePost={handleDeletePost}
-      />
+      {/* Main Grid */}
+      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+        {/* Left Column */}
+        <div className="space-y-6">
+          {/* Audience Growth Chart */}
+          <Card className="border-border/60 bg-card p-0">
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+              <div>
+                <h3 className="text-[15px] font-outfit text-foreground">Audience Growth</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Follower count &amp; impressions over time</p>
+              </div>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-5 pt-4 pb-2">
+              <div className="flex items-center gap-5 text-xs text-muted-foreground mb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-blue-500" />
+                  Followers
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-blue-200" />
+                  Impressions
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={260}>
+                <AreaChart data={audienceData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gradFollowers" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="gradImpressions" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#93c5fd" stopOpacity={0.15} />
+                      <stop offset="100%" stopColor="#93c5fd" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    dy={8}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    tickFormatter={(v: number) => formatNumber(v)}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="followers"
+                    stroke="#3b82f6"
+                    strokeWidth={2}
+                    fill="url(#gradFollowers)"
+                    name="Followers"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="impressions"
+                    stroke="#93c5fd"
+                    strokeWidth={1.5}
+                    fill="url(#gradImpressions)"
+                    name="Impressions"
+                    strokeDasharray="4 3"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
 
-      {/* Post Detail Modal */}
-      <PostDetailModal
-        isOpen={isPostDetailModalOpen}
-        onClose={() => setIsPostDetailModalOpen(false)}
-        post={selectedPost}
-        onUpdatePost={handleUpdatePost}
-        onDeletePost={handleDeletePost}
-      />
+          {/* Engagement Breakdown Chart */}
+          <Card className="border-border/60 bg-card p-0">
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+              <div>
+                <h3 className="text-[15px] font-outfit text-foreground">Engagement Breakdown</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Likes, comments, shares &amp; saves by day</p>
+              </div>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="px-5 pt-4 pb-2">
+              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
+                  Likes
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#60a5fa' }} />
+                  Comments
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#93c5fd' }} />
+                  Shares
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#bfdbfe' }} />
+                  Saves
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={engagementByDay} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                  <XAxis
+                    dataKey="day"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                    dy={8}
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 11, fill: '#94a3b8' }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="likes" name="Likes" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="comments" name="Comments" fill="#60a5fa" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="shares" name="Shares" fill="#93c5fd" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="saves" name="Saves" fill="#bfdbfe" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          {/* Top Performing Posts */}
+          <Card className="border-border/60 bg-card p-0">
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+              <div>
+                <h3 className="text-[15px] font-outfit text-foreground">Top Performing Posts</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Highest engagement this period</p>
+              </div>
+              <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                View all <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="divide-y divide-border/40">
+              {topPosts.map((post) => (
+                <div key={post.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer">
+                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
+                    <img src={post.image} alt={post.title} className="h-full w-full object-cover" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium text-foreground">{post.title}</p>
+                      <span className="shrink-0 text-[11px] text-muted-foreground">{post.platform}</span>
+                    </div>
+                    <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Eye className="h-3 w-3" />
+                        {post.impressions}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Heart className="h-3 w-3" />
+                        {post.likes}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <MessageCircle className="h-3 w-3" />
+                        {post.comments}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <p className="text-sm font-medium text-foreground">{post.engagement}</p>
+                    <p className="text-[11px] text-muted-foreground">engagement</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <Card className="border-border/60 bg-card p-0">
+            <div className="border-b border-border/40 px-5 py-4">
+              <h3 className="text-[15px] font-outfit text-foreground">Quick Actions</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-2.5 p-4">
+              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blue-primary text-white shadow-sm">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground group-hover:text-blue-700">AI Planner</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm">
+                  <Plus className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground group-hover:text-emerald-700">New Post</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white shadow-sm">
+                  <FileText className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground group-hover:text-violet-700">Drafts</span>
+              </button>
+              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm">
+                  <Send className="h-4 w-4" />
+                </div>
+                <span className="text-xs font-medium text-muted-foreground group-hover:text-amber-700">Publish</span>
+              </button>
+            </div>
+          </Card>
+
+          {/* Platform Performance */}
+          <Card className="border-border/60 bg-card p-0">
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+              <h3 className="text-[15px] font-outfit text-foreground">Platform Split</h3>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="flex items-center gap-4 px-5 pt-4 pb-2">
+              <div className="h-[120px] w-[120px] shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={platformData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={36}
+                      outerRadius={56}
+                      paddingAngle={3}
+                      dataKey="value"
+                      strokeWidth={0}
+                    >
+                      {platformData.map((entry) => (
+                        <Cell key={entry.name} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex-1 space-y-2.5">
+                {platformData.map((platform) => (
+                  <div key={platform.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: platform.color }} />
+                      <span className="text-xs text-foreground">{platform.name}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-foreground">{platform.followers}</span>
+                      <span className="text-[10px] text-emerald-600">{platform.growth}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          {/* Upcoming Posts */}
+          <Card className="border-border/60 bg-card p-0">
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+              <div>
+                <h3 className="text-[15px] font-outfit text-foreground">Upcoming Posts</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Next 48 hours</p>
+              </div>
+              <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                Calendar <ArrowUpRight className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="divide-y divide-border/40">
+              {upcomingPosts.map((post) => (
+                <div key={post.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                    post.type === 'image' ? 'bg-pink-50 text-pink-500' :
+                    post.type === 'video' ? 'bg-violet-50 text-violet-500' :
+                    post.type === 'article' ? 'bg-blue-50 text-blue-500' :
+                    'bg-slate-50 text-slate-500'
+                  }`}>
+                    {post.type === 'image' && <Heart className="h-3.5 w-3.5" />}
+                    {post.type === 'video' && <Eye className="h-3.5 w-3.5" />}
+                    {post.type === 'article' && <FileText className="h-3.5 w-3.5" />}
+                    {post.type === 'text' && <MessageCircle className="h-3.5 w-3.5" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm text-foreground">{post.title}</p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[11px] text-muted-foreground">{post.platform}</span>
+                      <span className="text-muted-foreground/40">·</span>
+                      <span className="text-[11px] text-muted-foreground">{post.scheduledTime}</span>
+                    </div>
+                  </div>
+                  <StatusBadge status={post.status} />
+                </div>
+              ))}
+            </div>
+          </Card>
+
+          {/* Recent Activity */}
+          <Card className="border-border/60 bg-card p-0">
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+              <h3 className="text-[15px] font-outfit text-foreground">Recent Activity</h3>
+              <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                View all <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+            <div className="divide-y divide-border/40">
+              {recentActivity.map((item) => (
+                <div key={item.id} className="flex items-start gap-3 px-5 py-3">
+                  <ActivityIcon type={item.type} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] leading-snug text-foreground">{item.text}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">{item.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
