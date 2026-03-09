@@ -78,7 +78,7 @@ export function LoginPage({ onLogin }: LoginPageProps) {
           {/* Logo */}
           <div className="flex justify-center items-center gap-2">
             <img src={logoImage} alt="LumenIQ" className="h-16 w-auto" />
-            <p className="text-4xl font-outfit font-outift text-white">LumenIQ</p>
+            <p className="text-4xl font-outfit text-white">LumenIQ</p>
           </div>
 
           {/* Title */}
