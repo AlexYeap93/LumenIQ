@@ -13,14 +13,7 @@ import {
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/LumenIQ Logo.png';
-
-declare global {
-  interface Window {
-    UnicornStudio?: {
-      init: () => void;
-    };
-  }
-}
+import { useUnicornStudio } from '../utils/useUnicornStudio';
 
 const showcaseStats = [
   { label: 'To your first content plan', value: '< 10 min' },
@@ -98,30 +91,7 @@ export function LandingPage() {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  useEffect(() => {
-    const existingScript = document.querySelector('script[data-unicornstudio]');
-    if (existingScript) {
-      window.UnicornStudio?.init();
-      return;
-    }
-
-    const script = document.createElement('script');
-    script.src =
-      'https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.0.5/dist/unicornStudio.umd.js';
-    script.async = true;
-    script.dataset.unicornstudio = 'true';
-    script.onload = () => {
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          window.UnicornStudio?.init();
-        });
-      } else {
-        window.UnicornStudio?.init();
-      }
-    };
-
-    (document.head || document.body).appendChild(script);
-  }, []);
+  useUnicornStudio();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -386,8 +356,8 @@ export function LandingPage() {
           aria-label="Scroll to top"
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white text-white shadow-lg transition hover:bg-slate-900">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6 text-blue-500">
-            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" className="size-6 text-blue-500">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
           </svg>
         </button>
       )}

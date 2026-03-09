@@ -1,9 +1,10 @@
 import { ReactNode, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
+import {
+  LayoutDashboard,
   MessageSquare,
   Calendar,
-  Image as ImageIcon, 
+  Image as ImageIcon,
   Settings,
   Menu,
   X,
@@ -23,48 +24,70 @@ interface NavItem {
   path: string;
 }
 
+function NavButton({
+  active,
+  label,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="relative group w-full">
+      <button
+        onClick={onClick}
+        className={`
+          relative w-full flex items-center justify-center h-10 rounded-lg transition-all duration-200
+          ${active
+            ? 'text-white rounded-xl'
+            : 'text-white hover:text-white hover:bg-white/10'
+          }
+        `}
+      >
+        {active && (
+          <motion.span
+            layoutId="sidebar-active-indicator"
+            className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-6 rounded-r-full bg-white"
+            transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+          />
+        )}
+        {children}
+      </button>
+      <Tooltip label={label} />
+    </div>
+  );
+}
+
+function Tooltip({ label }: { label: string }) {
+  return (
+    <div className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-2.5 py-1.5 bg-slate-800 text-[12px] text-white font-medium rounded-md whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 pointer-events-none shadow-xl border border-white/[0.08] z-50">
+      {label}
+      <span className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-800" />
+    </div>
+  );
+}
+
 export function ShellLayout({ children }: ShellLayoutProps) {
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const isDesktopSidebarExpanded = true;
 
-  const navItems: NavItem[] = [
-    {
-      id: 'chat',
-      label: 'Chat',
-      icon: <MessageSquare className="w-6 h-6" />,
-      path: '/app/dashboard'
-    },
-    {
-      id: 'calendar',
-      label: 'Calendar',
-      icon: <Calendar className="w-6 h-6" />,
-      path: '/app/calendar'
-    },
-    {
-      id: 'photo-storage',
-      label: 'Photo Storage',
-      icon: <ImageIcon className="w-6 h-6" />,
-      path: '/app/photo-storage'
-    },
-    {
-      id: 'settings',
-      label: 'Settings',
-      icon: <Settings className="w-6 h-6" />,
-      path: '/app/settings'
-    }
+  const primaryNav: NavItem[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard className="w-6 h-6" />, path: '/app/dashboard' },
+    { id: 'chat', label: 'Chat', icon: <MessageSquare className="w-6 h-6" />, path: '/app/chat' },
+    { id: 'calendar', label: 'Calendar', icon: <Calendar className="w-6 h-6" />, path: '/app/calendar' },
+    { id: 'photo-storage', label: 'Photos', icon: <ImageIcon className="w-6 h-6" />, path: '/app/photo-storage' },
   ];
 
   const handleNavClick = (path: string) => {
     navigate(path);
-    if (window.innerWidth < 768) {
-      setIsSidebarExpanded(false);
-    }
+    setIsMobileMenuOpen(false);
   };
 
   const handleLogout = () => {
-    // In production, this would clear auth state and redirect
     navigate('/login');
   };
 
@@ -75,170 +98,150 @@ export function ShellLayout({ children }: ShellLayoutProps) {
   const isActive = (path: string) => location.pathname === path;
 
   return (
-    <div className="flex h-screen gradient-blue-light overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden">
       {/* Desktop Sidebar */}
-      <motion.aside
-        initial={false}
-        animate={{ width: 240 }}
-        transition={{ duration: 0.3, ease: 'easeInOut' }}
-        className="hidden md:flex flex-col bg-gradient-to-br from-blue-500 via-blue-800 to-blue-900 shadow-xl relative z-10"
+      <div
+        className="max-w-[7rem] w-full hidden md:flex flex-col flex-shrink-0 bg-blue-600 relative z-10"
       >
-        {/* Logo Section */}
-        <div className="h-16 flex items-center justify-center border-b border-white/10">
-          <motion.img
-            key="logo-full"
-            src={logoIcon}
-            alt="LumenIQ"
-            className="h-6 mr-2 w-fit cursor-pointer"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+        <div className="flex items-center justify-center h-[6rem]">
+          <button
             onClick={handleLogoClick}
-          />
-          <span className="text-white text-base font-outfit">LumenIQ</span>
+            className="flex items-center justify-center w-9 h-9 rounded-lg transition-opacity hover:opacity-80 active:scale-95"
+          >
+            <img src={logoIcon} alt="LumenIQ" className="w-7 h-7 object-contain" />
+          </button>
         </div>
 
-        {/* Navigation Items */}
-        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
-          {navItems.map((item) => (
-            <motion.button
-              key={item.id}
-              onClick={() => handleNavClick(item.path)}
-              className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
-                isActive(item.path)
-                  ? 'bg-white/20 text-white shadow-lg'
-                  : 'text-white/70 hover:bg-white/10 hover:text-white'
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="flex-shrink-0">{item.icon}</div>
-              <AnimatePresence>
-                {isDesktopSidebarExpanded && (
-                  <motion.span
-                    initial={{ opacity: 0, width: 0 }}
-                    animate={{ opacity: 1, width: 'auto' }}
-                    exit={{ opacity: 0, width: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="text-sm font-medium whitespace-nowrap overflow-hidden"
-                  >
-                    {item.label}
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </motion.button>
-          ))}
+        <div className="mx-auto w-8 h-px bg-white" />
+
+        <nav className="flex-1 flex flex-col items-center gap-1 pt-3 px-3">
+          {primaryNav.map((item) => {
+            const active = isActive(item.path);
+            return (
+              <NavButton
+                key={item.id}
+                active={active}
+                label={item.label}
+                onClick={() => handleNavClick(item.path)}
+              >
+                {item.icon}
+              </NavButton>
+            );
+          })}
         </nav>
 
-        {/* Logout Button */}
-        <div className="px-3 pb-4">
-          <motion.button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-all"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+        <div className="flex flex-col items-center gap-1 px-2 pb-5">
+          <NavButton
+            active={isActive('/app/settings')}
+            label="Settings"
+            onClick={() => handleNavClick('/app/settings')}
           >
-            <div className="flex-shrink-0">
+            <Settings className="w-6 h-6" />
+          </NavButton>
+
+          <div className="w-8 h-px bg-white my-1.5" />
+
+          <div className="relative group w-full">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center h-10 rounded-lg text-white hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
+            >
               <LogOut className="w-6 h-6" />
-            </div>
-            <AnimatePresence>
-              {isDesktopSidebarExpanded && (
-                <motion.span
-                  initial={{ opacity: 0, width: 0 }}
-                  animate={{ opacity: 1, width: 'auto' }}
-                  exit={{ opacity: 0, width: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="text-sm font-medium whitespace-nowrap overflow-hidden"
-                >
-                  Logout
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </motion.button>
+            </button>
+            <Tooltip label="Log out" />
+          </div>
         </div>
+      </div>
 
-      </motion.aside>
-
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 gradient-blue-dark flex items-center justify-between px-4 z-50 shadow-lg">
-        <div className="flex items-center gap-2">
-          <img 
-            src={logoIcon} 
-            alt="LumenIQ" 
-            className="h-8 w-auto cursor-pointer" 
-            onClick={handleLogoClick}
-          />
-          <span className="text-white text-base font-outfit">LumenIQ</span>
-        </div>
+      {/* Mobile Nav Bar */}
+      <div className="md:hidden fixed top-0 left-0 right-0 h-14 bg-blue-600 flex items-center justify-between px-4 z-50 border-b border-white/[0.06]">
+        <button onClick={handleLogoClick} className="flex items-center gap-2.5">
+          <img src={logoIcon} alt="LumenIQ" className="h-6 w-auto" />
+          <span className="text-white text-[15px] font-outfit tracking-tight">LumenIQ</span>
+        </button>
         <button
-          onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
-          className="text-white p-2"
+          onClick={() => setIsMobileMenuOpen((v) => !v)}
+          className="flex items-center justify-center w-9 h-9 rounded-lg text-white hover:text-white hover:bg-white/[0.06] transition-colors"
         >
-          <Menu className="w-6 h-6" />
+          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </div>
 
-      {/* Mobile Sidebar Overlay */}
+      {/* Mobile Popout Nav */}
       <AnimatePresence>
-        {isSidebarExpanded && (
+        {isMobileMenuOpen && (
           <>
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setIsSidebarExpanded(false)}
-              className="md:hidden fixed inset-0 bg-black/50 z-40"
+              transition={{ duration: 0.2 }}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             />
             <motion.aside
-              initial={{ x: -300 }}
+              initial={{ x: -280 }}
               animate={{ x: 0 }}
-              exit={{ x: -300 }}
-              transition={{ type: 'spring', damping: 25 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 w-64 gradient-blue-dark z-50 flex flex-col"
+              exit={{ x: -280 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 34 }}
+              className="md:hidden fixed left-0 top-0 bottom-0 w-[264px] bg-blue-600 z-50 flex flex-col"
             >
-              <div className="h-16 flex items-center justify-between px-4 border-b border-white/10">
-                <div className="flex items-center gap-2">
-                  <img 
-                    src={logoIcon} 
-                    alt="LumenIQ" 
-                    className="h-8 w-auto cursor-pointer" 
-                    onClick={handleLogoClick}
-                  />
-                  <span className="text-white text-base font-outfit">LumenIQ</span>
-                </div>  
-                <button
-                  onClick={() => setIsSidebarExpanded(false)}
-                  className="text-white p-2"
-                >
-                  <X className="w-6 h-6" />
+              <div className="h-14 flex items-center justify-between px-4 border-b border-white/[0.06]">
+                <button onClick={handleLogoClick} className="flex items-center gap-2.5">
+                  <img src={logoIcon} alt="LumenIQ" className="h-6 w-auto" />
+                  <span className="text-white text-[15px] font-outfit tracking-tight">LumenIQ</span>
                 </button>
               </div>
 
-              <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
-                {navItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => handleNavClick(item.path)}
-                    className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all ${
-                      isActive(item.path)
-                        ? 'bg-white/20 text-white shadow-lg'
-                        : 'text-white/70 hover:bg-white/10 hover:text-white'
-                    }`}
-                  >
-                    {item.icon}
-                    <span className="text-sm font-medium">{item.label}</span>
-                  </button>
-                ))}
+              <nav className="flex-1 flex flex-col gap-0.5 px-3 pt-4 overflow-y-auto">
+                {primaryNav.map((item) => {
+                  const active = isActive(item.path);
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNavClick(item.path)}
+                      className={`
+                        relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200
+                        ${active
+                          ? 'bg-white/10 text-white'
+                          : 'text-white hover:text-white hover:bg-white/20'
+                        }
+                      `}
+                    >
+                      {active && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-6 rounded-r-full bg-white" />
+                      )}
+                      {item.icon}
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
               </nav>
 
-              <div className="px-3 pb-4">
+              <div className="px-3 pb-4 space-y-0.5">
+                <div className="w-full h-px bg-white/[0.06] mb-2" />
+                <button
+                  onClick={() => handleNavClick('/app/settings')}
+                  className={`
+                    relative flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-[13px] font-medium transition-all duration-200
+                    ${isActive('/app/settings')
+                      ? 'bg-white/10 text-white'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-white/[0.06]'
+                    }
+                  `}
+                >
+                  {isActive('/app/settings') && (
+                    <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.75 h-6 rounded-r-full bg-white" />
+                  )}
+                  <Settings className="w-6 h-6" />
+                  <span>Settings</span>
+                </button>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-white/70 hover:bg-white/10 hover:text-white transition-all"
+                  className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-[13px] font-medium text-white hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
                 >
                   <LogOut className="w-6 h-6" />
-                  <span className="text-sm font-medium">Logout</span>
+                  <span>Log out</span>
                 </button>
               </div>
             </motion.aside>
@@ -246,12 +249,10 @@ export function ShellLayout({ children }: ShellLayoutProps) {
         )}
       </AnimatePresence>
 
-      {/* Main Content */}
+      {/* ── Main Content ── */}
       <main className="flex-1 overflow-y-auto">
-        <div className="md:pt-0 pt-16">
-          <div className="p-6 md:p-8">
-            {children}
-          </div>
+        <div className="md:pt-0 pt-14">
+          <div className="p-5 md:p-8">{children}</div>
         </div>
       </main>
     </div>
