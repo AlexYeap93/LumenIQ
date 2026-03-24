@@ -9,6 +9,8 @@ interface AuthState {
     email: string;
     firstName?: string;
     lastName?: string;
+    avatarUrl?: string;
+    accountPlan?: string;
   } | null;
   token: string | null;
 }
