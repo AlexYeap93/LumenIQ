@@ -23,6 +23,8 @@ import { useBusiness } from '../auth/hooks/useBusiness';
 import type { Business } from '../mockData';
 import logoIcon from '../components/photos/LumenIQClear.png';
 
+const DEFAULT_ACCOUNT_PLAN = 'Standard Plan';
+
 interface SidebarProps {
   children: ReactNode;
 }
@@ -43,8 +45,6 @@ function formatDisplayName(email: string | undefined): string {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ');
 }
-
-const DEFAULT_ACCOUNT_PLAN = 'Pro Plan';
 
 type ProfileUser = {
   email: string;
