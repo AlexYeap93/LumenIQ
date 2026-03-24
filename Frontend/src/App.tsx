@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Provider } from 'react-redux';
 import { Toaster } from './components/ui/sonner';
-import { store } from './shell/store';
-import { ShellLayout } from './shell/layouts/ShellLayout';
+import { store } from './auth/store';
+import { Sidebar } from './pages/Sidebar';
 import { LoginPage } from './pages/LoginPage';
 import { SignupPage } from './pages/SignupPage';
 import { LandingPage } from './pages/LandingPage';
@@ -12,7 +12,7 @@ import { ChatbotPage } from './pages/ChatbotPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { PhotoStoragePage } from './pages/PhotoStoragePage';
 import { SettingsPage } from './pages/SettingsPage';
-import { useAuth } from './shell/hooks/useAuth';
+import { useAuth } from './auth/hooks/useAuth';
 
 function AppContent() {
   const { isAuthenticated, needsOnboarding, hasCompletedOnboarding, login, signup, completeOnboarding } = useAuth();
@@ -39,7 +39,7 @@ function AppContent() {
               needsOnboarding && !hasCompletedOnboarding ? (
                 <OnboardingWizard onComplete={completeOnboarding} />
               ) : (
-                <ShellLayout>
+                <Sidebar>
                   <Routes>
                     <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
                     <Route path="/dashboard" element={<DashboardPage />} />
@@ -48,7 +48,7 @@ function AppContent() {
                     <Route path="/photo-storage" element={<PhotoStoragePage />} />
                     <Route path="/settings" element={<SettingsPage />} />
                   </Routes>
-                </ShellLayout>
+                </Sidebar>
               )
             ) : (
               <Navigate to="/login" replace />
