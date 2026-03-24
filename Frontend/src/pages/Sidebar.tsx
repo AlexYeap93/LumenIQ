@@ -11,9 +11,9 @@ import {
   LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import logoIcon from '../../components/photos/whiteLogo.png';
+import logoIcon from '../components/photos/whiteLogo.png';
 
-interface ShellLayoutProps {
+interface SidebarProps {
   children: ReactNode;
 }
 
@@ -70,7 +70,7 @@ function Tooltip({ label }: { label: string }) {
   );
 }
 
-export function ShellLayout({ children }: ShellLayoutProps) {
+export function Sidebar({ children }: SidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
