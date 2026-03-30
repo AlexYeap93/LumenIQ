@@ -1,11 +1,11 @@
 import { useDispatch, useSelector } from 'react-redux';
-import type { Business } from '../../mockData';
 import type { RootState, AppDispatch } from '../store';
 import {
   switchBusiness,
   addBusiness,
   removeBusiness,
   updateBusinessFields,
+  type Business,
 } from '../store/businessSlice';
 
 export function selectBusinesses(state: RootState) {

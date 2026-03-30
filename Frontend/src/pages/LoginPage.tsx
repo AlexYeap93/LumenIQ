@@ -5,25 +5,32 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Card } from '../components/ui/card';
 import logoImage from '../components/photos/LumenIQClear.png';
-import { ArrowLeftIcon } from 'lucide-react';
+import { ArrowLeftIcon, Loader2 } from 'lucide-react';
 import { useUnicornStudio } from '../utils/useUnicornStudio';
+import { useAuth } from '../auth/hooks/useAuth';
+import { toast } from 'sonner';
 
-interface LoginPageProps {
-  onLogin: (email: string) => void;
-}
-
-export function LoginPage({ onLogin }: LoginPageProps) {
+export function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   useUnicornStudio();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - in production this would use Firebase auth
-    onLogin(email);
-    navigate('/app/dashboard');
+    setIsLoading(true);
+    try {
+      await login(email, password);
+      navigate('/app/dashboard');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Invalid email or password';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -89,12 +96,23 @@ export function LoginPage({ onLogin }: LoginPageProps) {
               />
             </div>
 
-            <Button type="submit" className="w-full gradient-blue-primary text-white hover:opacity-90">
-              Sign In
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full gradient-blue-primary text-white hover:opacity-90"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Signing in...
+                </>
+              ) : (
+                'Sign In'
+              )}
             </Button>
 
-            <div className="text-center text-sm text-white">
-              Sign in with Google (NextAuth will go here)
+            <div className="text-center text-sm text-white/60">
+              Google sign-in coming soon
             </div>
           </form>
 

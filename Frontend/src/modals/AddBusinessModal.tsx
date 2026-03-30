@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -12,6 +13,11 @@ import {
   DialogHeader,
   DialogTitle
 } from '../components/ui/dialog';
+import { Loader2 } from 'lucide-react';
+import { businessApi, mapBusinessToFrontend } from '../api/businesses';
+import { useDispatch } from 'react-redux';
+import { addBusiness } from '../auth/store/businessSlice';
+import { toast } from 'sonner';
 
 interface BusinessFormData {
   name: string;
@@ -37,8 +43,31 @@ export function AddBusinessModal({
   onChange,
   onSubmit
 }: AddBusinessModalProps) {
-  const handleSubmit = () => {
-    onSubmit();
+  const dispatch = useDispatch();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      const created = await businessApi.create({
+        name: value.name,
+        description: value.description || undefined,
+        website_url: value.websiteUrl || undefined,
+        instagram_handle: value.instagramHandle || undefined,
+        brand_color: value.brandColor || undefined,
+        target_location: value.location || undefined,
+      });
+
+      const mapped = mapBusinessToFrontend(created);
+      dispatch(addBusiness(mapped));
+      toast.success('Business created successfully');
+      onSubmit();
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to create business';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -140,10 +169,17 @@ export function AddBusinessModal({
           </DialogClose>
           <Button
             onClick={handleSubmit}
-            disabled={!value.name}
+            disabled={!value.name || isSubmitting}
             className="gradient-blue-primary text-white hover:opacity-90 disabled:opacity-60"
           >
-            Add Business
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              'Add Business'
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

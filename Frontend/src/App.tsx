@@ -15,21 +15,16 @@ import { SettingsPage } from './pages/SettingsPage';
 import { useAuth } from './auth/hooks/useAuth';
 
 function AppContent() {
-  const { isAuthenticated, needsOnboarding, hasCompletedOnboarding, login, signup, completeOnboarding } = useAuth();
+  const { isAuthenticated, needsOnboarding, hasCompletedOnboarding } = useAuth();
 
   return (
     <BrowserRouter>
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<LandingPage />} />
-        <Route 
-          path="/login" 
-          element={<LoginPage onLogin={(email: string) => login(email, 'mock-token')} />} 
-        />
-        <Route 
-          path="/signup" 
-          element={<SignupPage onSignup={() => signup('email@email.com', 'mock-token')} />} 
-        />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="/onboarding" element={<OnboardingWizard />} />
         
         {/* Protected routes */}
         <Route 
@@ -37,7 +32,7 @@ function AppContent() {
           element={
             isAuthenticated ? (
               needsOnboarding && !hasCompletedOnboarding ? (
-                <OnboardingWizard onComplete={completeOnboarding} />
+                <OnboardingWizard />
               ) : (
                 <Sidebar>
                   <Routes>

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import {
@@ -32,21 +33,25 @@ import {
   MessageCircle,
   ChevronRight,
   MoreHorizontal,
+  Loader2,
 } from 'lucide-react';
-
-import {
-  type TimeRange,
-  type PostType,
-  type PostStatus,
-  type ActivityType,
-  MOCK_KPI_DATA,
-  MOCK_AUDIENCE_GROWTH,
-  MOCK_ENGAGEMENT,
-  MOCK_PLATFORMS,
-  MOCK_UPCOMING_POSTS,
-  MOCK_TOP_POSTS,
-  MOCK_ACTIVITY,
-} from '../mockData';
+import type { RootState } from '../auth/store';
+import { analyticsApi } from '../api/analytics';
+import { calendarApi } from '../api/calendar';
+import type {
+  TimeRange,
+  PostType,
+  PostStatus,
+  ActivityType,
+  KpiItem,
+  AudienceDataPoint,
+  EngagementDataPoint,
+  PlatformItem,
+  TopPost,
+  ActivityItem,
+  UpcomingPost,
+} from '../types/analytics';
+import type { CalendarPostAPI } from '../types/calendar';
 
 const KPI_DISPLAY_CONFIG: Record<string, { icon: React.ReactNode; accent: string }> = {
   followers: { icon: <Users className="h-5 w-5 text-blue-600" />, accent: 'bg-blue-50' },
@@ -156,17 +161,83 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   );
 }
 
+function mapCalendarPostToUpcoming(post: CalendarPostAPI): UpcomingPost {
+  const firstLine = (post.caption ?? 'Untitled').split('\n')[0].slice(0, 50);
+  return {
+    id: post.id,
+    title: firstLine,
+    platform: post.platform ?? 'Instagram',
+    scheduledTime: post.scheduled_at
+      ? new Date(post.scheduled_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : '',
+    type: (post.post_type as PostType) ?? 'image',
+    status: post.status === 'scheduled' ? 'ready' : 'draft',
+  };
+}
+
+function SkeletonCard() {
+  return (
+    <Card className="border-border/60 bg-card p-5 animate-pulse">
+      <div className="h-4 bg-muted rounded w-1/3 mb-3" />
+      <div className="h-8 bg-muted rounded w-1/2 mb-3" />
+      <div className="h-3 bg-muted rounded w-2/3" />
+    </Card>
+  );
+}
+
 export function DashboardPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('7D');
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Data sources — swap these assignments with fetched API data
-  const kpiData = MOCK_KPI_DATA;
-  const audienceData = MOCK_AUDIENCE_GROWTH[timeRange];
-  const engagementData = MOCK_ENGAGEMENT;
-  const platformData = MOCK_PLATFORMS;
-  const upcomingPosts = MOCK_UPCOMING_POSTS;
-  const topPosts = MOCK_TOP_POSTS;
-  const recentActivity = MOCK_ACTIVITY;
+  const activeBusiness = useSelector((state: RootState) =>
+    state.business.businesses.find((b) => b.isActive),
+  );
+  const businessId = activeBusiness?.id;
+
+  const [kpiData, setKpiData] = useState<KpiItem[]>([]);
+  const [audienceData, setAudienceData] = useState<AudienceDataPoint[]>([]);
+  const [engagementData, setEngagementData] = useState<EngagementDataPoint[]>([]);
+  const [platformData, setPlatformData] = useState<PlatformItem[]>([]);
+  const [upcomingPosts, setUpcomingPosts] = useState<UpcomingPost[]>([]);
+  const [topPosts, setTopPosts] = useState<TopPost[]>([]);
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+
+  const fetchDashboardData = useCallback(async () => {
+    if (!businessId) return;
+    setIsLoading(true);
+    try {
+      const [kpis, audience, engagement, platforms, top, activity] = await Promise.allSettled([
+        analyticsApi.getKpis(businessId, timeRange),
+        analyticsApi.getAudience(businessId, timeRange),
+        analyticsApi.getEngagement(businessId, timeRange),
+        analyticsApi.getPlatforms(businessId),
+        analyticsApi.getTopPosts(businessId, timeRange),
+        analyticsApi.getActivity(businessId),
+      ]);
+
+      if (kpis.status === 'fulfilled') setKpiData(kpis.value);
+      if (audience.status === 'fulfilled') setAudienceData(audience.value);
+      if (engagement.status === 'fulfilled') setEngagementData(engagement.value);
+      if (platforms.status === 'fulfilled') setPlatformData(platforms.value);
+      if (top.status === 'fulfilled') setTopPosts(top.value);
+      if (activity.status === 'fulfilled') setRecentActivity(activity.value);
+
+      try {
+        const calendarPosts = await calendarApi.listPosts(businessId, undefined, 'scheduled');
+        setUpcomingPosts(calendarPosts.slice(0, 4).map(mapCalendarPostToUpcoming));
+      } catch {
+        // calendar endpoint may not exist yet
+      }
+    } catch {
+      // analytics endpoints may return errors initially
+    } finally {
+      setIsLoading(false);
+    }
+  }, [businessId, timeRange]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -206,335 +277,295 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {kpiData.map((kpi) => {
-          const display = KPI_DISPLAY_CONFIG[kpi.key];
-          return display ? (
-            <KpiCard
-              key={kpi.key}
-              label={kpi.label}
-              value={kpi.value}
-              change={kpi.change}
-              changeLabel={kpi.changeLabel}
-              icon={display.icon}
-              accent={display.accent}
-            />
-          ) : null;
-        })}
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-        {/* Left Column */}
-        <div className="space-y-6">
-          {/* Audience Growth Chart */}
-          <Card className="border-border/60 bg-card p-0">
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-              <div>
-                <h3 className="text-[15px] font-outfit text-foreground">Audience Growth</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Follower count &amp; impressions over time</p>
-              </div>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="px-5 pt-4 pb-2">
-              <div className="flex items-center gap-5 text-xs text-muted-foreground mb-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-blue-500" />
-                  Followers
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-blue-200" />
-                  Impressions
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height={260}>
-                <AreaChart data={audienceData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gradFollowers" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
-                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="gradImpressions" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#93c5fd" stopOpacity={0.15} />
-                      <stop offset="100%" stopColor="#93c5fd" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
-                    dy={8}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
-                    tickFormatter={(v: number) => formatNumber(v)}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Area
-                    type="monotone"
-                    dataKey="followers"
-                    stroke="#3b82f6"
-                    strokeWidth={2}
-                    fill="url(#gradFollowers)"
-                    name="Followers"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="impressions"
-                    stroke="#93c5fd"
-                    strokeWidth={1.5}
-                    fill="url(#gradImpressions)"
-                    name="Impressions"
-                    strokeDasharray="4 3"
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          {/* Engagement Breakdown Chart */}
-          <Card className="border-border/60 bg-card p-0">
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-              <div>
-                <h3 className="text-[15px] font-outfit text-foreground">Engagement Breakdown</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Likes, comments, shares &amp; saves by day</p>
-              </div>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="px-5 pt-4 pb-2">
-              <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#3b82f6' }} />
-                  Likes
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#60a5fa' }} />
-                  Comments
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#93c5fd' }} />
-                  Shares
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#bfdbfe' }} />
-                  Saves
-                </div>
-              </div>
-              <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={engagementData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis
-                    dataKey="day"
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
-                    dy={8}
-                  />
-                  <YAxis
-                    axisLine={false}
-                    tickLine={false}
-                    tick={{ fontSize: 11, fill: '#94a3b8' }}
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="likes" name="Likes" fill="#3b82f6" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="comments" name="Comments" fill="#60a5fa" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="shares" name="Shares" fill="#93c5fd" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="saves" name="Saves" fill="#bfdbfe" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
-
-          {/* Top Performing Posts */}
-          <Card className="border-border/60 bg-card p-0">
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-              <div>
-                <h3 className="text-[15px] font-outfit text-foreground">Top Performing Posts</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Highest engagement this period</p>
-              </div>
-              <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                View all <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-            <div className="divide-y divide-border/40">
-              {topPosts.map((post) => (
-                <div key={post.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer">
-                  <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
-                    <img src={post.image} alt={post.title} className="h-full w-full object-cover" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <p className="truncate text-sm font-medium text-foreground">{post.title}</p>
-                      <span className="shrink-0 text-[11px] text-muted-foreground">{post.platform}</span>
-                    </div>
-                    <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        {post.impressions}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-3 w-3" />
-                        {post.likes}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <MessageCircle className="h-3 w-3" />
-                        {post.comments}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="shrink-0 text-right">
-                    <p className="text-sm font-medium text-foreground">{post.engagement}</p>
-                    <p className="text-[11px] text-muted-foreground">engagement</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Card>
+      {isLoading && kpiData.length === 0 ? (
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
         </div>
+      ) : (
+        <>
+          {/* KPI Row */}
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {kpiData.map((kpi) => {
+              const display = KPI_DISPLAY_CONFIG[kpi.key];
+              return display ? (
+                <KpiCard
+                  key={kpi.key}
+                  label={kpi.label}
+                  value={kpi.value}
+                  change={kpi.change}
+                  changeLabel={kpi.changeLabel}
+                  icon={display.icon}
+                  accent={display.accent}
+                />
+              ) : null;
+            })}
+          </div>
 
-        {/* Right Column */}
-        <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card className="border-border/60 bg-card p-0">
-            <div className="border-b border-border/40 px-5 py-4">
-              <h3 className="text-[15px] font-outfit text-foreground">Quick Actions</h3>
-            </div>
-            <div className="grid grid-cols-2 gap-2.5 p-4">
-              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blue-primary text-white shadow-sm">
-                  <Sparkles className="h-4 w-4" />
+          {/* Main Grid */}
+          <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+            {/* Left Column */}
+            <div className="space-y-6">
+              {/* Audience Growth Chart */}
+              <Card className="border-border/60 bg-card p-0">
+                <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+                  <div>
+                    <h3 className="text-[15px] font-outfit text-foreground">Audience Growth</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Follower count &amp; impressions over time</p>
+                  </div>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
                 </div>
-                <span className="text-xs font-medium text-muted-foreground group-hover:text-blue-700">AI Planner</span>
-              </button>
-              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm">
-                  <Plus className="h-4 w-4" />
+                <div className="px-5 pt-4 pb-2">
+                  <div className="flex items-center gap-5 text-xs text-muted-foreground mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-blue-500" />
+                      Followers
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-blue-200" />
+                      Impressions
+                    </div>
+                  </div>
+                  {audienceData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={260}>
+                      <AreaChart data={audienceData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="gradFollowers" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.2} />
+                            <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="gradImpressions" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#93c5fd" stopOpacity={0.15} />
+                            <stop offset="100%" stopColor="#93c5fd" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={8} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v: number) => formatNumber(v)} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Area type="monotone" dataKey="followers" stroke="#3b82f6" strokeWidth={2} fill="url(#gradFollowers)" name="Followers" />
+                        <Area type="monotone" dataKey="impressions" stroke="#93c5fd" strokeWidth={1.5} fill="url(#gradImpressions)" name="Impressions" strokeDasharray="4 3" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-[260px] text-sm text-muted-foreground">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'No audience data yet'}
+                    </div>
+                  )}
                 </div>
-                <span className="text-xs font-medium text-muted-foreground group-hover:text-emerald-700">New Post</span>
-              </button>
-              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white shadow-sm">
-                  <FileText className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground group-hover:text-violet-700">Drafts</span>
-              </button>
-              <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm">
-                  <Send className="h-4 w-4" />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground group-hover:text-amber-700">Publish</span>
-              </button>
-            </div>
-          </Card>
+              </Card>
 
-          {/* Platform Performance */}
-          <Card className="border-border/60 bg-card p-0">
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-              <h3 className="text-[15px] font-outfit text-foreground">Platform Split</h3>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <MoreHorizontal className="h-4 w-4" />
-              </button>
+              {/* Engagement Breakdown Chart */}
+              <Card className="border-border/60 bg-card p-0">
+                <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+                  <div>
+                    <h3 className="text-[15px] font-outfit text-foreground">Engagement Breakdown</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Likes, comments, shares &amp; saves by day</p>
+                  </div>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors">
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-5 pt-4 pb-2">
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground mb-1">
+                    <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#3b82f6' }} /> Likes</div>
+                    <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#60a5fa' }} /> Comments</div>
+                    <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#93c5fd' }} /> Shares</div>
+                    <div className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: '#bfdbfe' }} /> Saves</div>
+                  </div>
+                  {engagementData.length > 0 ? (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart data={engagementData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }} barCategoryGap="20%">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} dy={8} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                        <Tooltip content={<CustomTooltip />} />
+                        <Bar dataKey="likes" name="Likes" fill="#3b82f6" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="comments" name="Comments" fill="#60a5fa" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="shares" name="Shares" fill="#93c5fd" radius={[3, 3, 0, 0]} />
+                        <Bar dataKey="saves" name="Saves" fill="#bfdbfe" radius={[3, 3, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <div className="flex items-center justify-center h-[240px] text-sm text-muted-foreground">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : 'No engagement data yet'}
+                    </div>
+                  )}
+                </div>
+              </Card>
+
+              {/* Top Performing Posts */}
+              <Card className="border-border/60 bg-card p-0">
+                <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+                  <div>
+                    <h3 className="text-[15px] font-outfit text-foreground">Top Performing Posts</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Highest engagement this period</p>
+                  </div>
+                  <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                    View all <ChevronRight className="h-3 w-3" />
+                  </button>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {topPosts.length > 0 ? topPosts.map((post) => (
+                    <div key={post.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/30 transition-colors cursor-pointer">
+                      <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg">
+                        <img src={post.image} alt={post.title} className="h-full w-full object-cover" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-medium text-foreground">{post.title}</p>
+                          <span className="shrink-0 text-[11px] text-muted-foreground">{post.platform}</span>
+                        </div>
+                        <div className="mt-1 flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1"><Eye className="h-3 w-3" />{post.impressions}</span>
+                          <span className="flex items-center gap-1"><Heart className="h-3 w-3" />{post.likes}</span>
+                          <span className="flex items-center gap-1"><MessageCircle className="h-3 w-3" />{post.comments}</span>
+                        </div>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-sm font-medium text-foreground">{post.engagement}</p>
+                        <p className="text-[11px] text-muted-foreground">engagement</p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'No top posts yet'}
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
-            <div className="flex items-center gap-4 px-5 pt-4 pb-2">
-              <div className="h-[120px] w-[120px] shrink-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={platformData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={36}
-                      outerRadius={56}
-                      paddingAngle={3}
-                      dataKey="value"
-                      strokeWidth={0}
-                    >
-                      {platformData.map((entry) => (
-                        <Cell key={entry.name} fill={entry.color} />
+
+            {/* Right Column */}
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <Card className="border-border/60 bg-card p-0">
+                <div className="border-b border-border/40 px-5 py-4">
+                  <h3 className="text-[15px] font-outfit text-foreground">Quick Actions</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5 p-4">
+                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blue-primary text-white shadow-sm"><Sparkles className="h-4 w-4" /></div>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-blue-700">AI Planner</span>
+                  </button>
+                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm"><Plus className="h-4 w-4" /></div>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-emerald-700">New Post</span>
+                  </button>
+                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white shadow-sm"><FileText className="h-4 w-4" /></div>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-violet-700">Drafts</span>
+                  </button>
+                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm"><Send className="h-4 w-4" /></div>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-amber-700">Publish</span>
+                  </button>
+                </div>
+              </Card>
+
+              {/* Platform Performance */}
+              <Card className="border-border/60 bg-card p-0">
+                <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+                  <h3 className="text-[15px] font-outfit text-foreground">Platform Split</h3>
+                  <button className="text-muted-foreground hover:text-foreground transition-colors"><MoreHorizontal className="h-4 w-4" /></button>
+                </div>
+                {platformData.length > 0 ? (
+                  <div className="flex items-center gap-4 px-5 pt-4 pb-2">
+                    <div className="h-[120px] w-[120px] shrink-0">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie data={platformData} cx="50%" cy="50%" innerRadius={36} outerRadius={56} paddingAngle={3} dataKey="value" strokeWidth={0}>
+                            {platformData.map((entry) => (<Cell key={entry.name} fill={entry.color} />))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="flex-1 space-y-2.5">
+                      {platformData.map((platform) => (
+                        <div key={platform.name} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: platform.color }} />
+                            <span className="text-xs text-foreground">{platform.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-medium text-foreground">{platform.followers}</span>
+                            <span className="text-[10px] text-emerald-600">{platform.growth}</span>
+                          </div>
+                        </div>
                       ))}
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              <div className="flex-1 space-y-2.5">
-                {platformData.map((platform) => (
-                  <div key={platform.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: platform.color }} />
-                      <span className="text-xs text-foreground">{platform.name}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-foreground">{platform.followers}</span>
-                      <span className="text-[10px] text-emerald-600">{platform.growth}</span>
                     </div>
                   </div>
-                ))}
-              </div>
-            </div>
-          </Card>
+                ) : (
+                  <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+                    {isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'No platform data yet'}
+                  </div>
+                )}
+              </Card>
 
-          {/* Upcoming Posts */}
-          <Card className="border-border/60 bg-card p-0">
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-              <div>
-                <h3 className="text-[15px] font-outfit text-foreground">Upcoming Posts</h3>
-                <p className="text-xs text-muted-foreground mt-0.5">Next 48 hours</p>
-              </div>
-              <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                Calendar <ArrowUpRight className="h-3 w-3" />
-              </button>
-            </div>
-            <div className="divide-y divide-border/40">
-              {upcomingPosts.map((post) => (
-                <div key={post.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${POST_TYPE_DISPLAY[post.type].className}`}>
-                    {POST_TYPE_DISPLAY[post.type].icon}
+              {/* Upcoming Posts */}
+              <Card className="border-border/60 bg-card p-0">
+                <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+                  <div>
+                    <h3 className="text-[15px] font-outfit text-foreground">Upcoming Posts</h3>
+                    <p className="text-xs text-muted-foreground mt-0.5">Next 48 hours</p>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm text-foreground">{post.title}</p>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[11px] text-muted-foreground">{post.platform}</span>
-                      <span className="text-muted-foreground/40">·</span>
-                      <span className="text-[11px] text-muted-foreground">{post.scheduledTime}</span>
+                  <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                    Calendar <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                </div>
+                <div className="divide-y divide-border/40">
+                  {upcomingPosts.length > 0 ? upcomingPosts.map((post) => (
+                    <div key={post.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/30 transition-colors cursor-pointer">
+                      <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${POST_TYPE_DISPLAY[post.type]?.className ?? 'bg-slate-50 text-slate-500'}`}>
+                        {POST_TYPE_DISPLAY[post.type]?.icon ?? <MessageCircle className="h-3.5 w-3.5" />}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm text-foreground">{post.title}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[11px] text-muted-foreground">{post.platform}</span>
+                          <span className="text-muted-foreground/40">·</span>
+                          <span className="text-[11px] text-muted-foreground">{post.scheduledTime}</span>
+                        </div>
+                      </div>
+                      <StatusBadge status={post.status} />
                     </div>
-                  </div>
-                  <StatusBadge status={post.status} />
+                  )) : (
+                    <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'No upcoming posts'}
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          </Card>
+              </Card>
 
-          {/* Recent Activity */}
-          <Card className="border-border/60 bg-card p-0">
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-              <h3 className="text-[15px] font-outfit text-foreground">Recent Activity</h3>
-              <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                View all <ChevronRight className="h-3 w-3" />
-              </button>
-            </div>
-            <div className="divide-y divide-border/40">
-              {recentActivity.map((item) => (
-                <div key={item.id} className="flex items-start gap-3 px-5 py-3">
-                  <ActivityIcon type={item.type} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[13px] leading-snug text-foreground">{item.text}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground">{item.time}</p>
-                  </div>
+              {/* Recent Activity */}
+              <Card className="border-border/60 bg-card p-0">
+                <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+                  <h3 className="text-[15px] font-outfit text-foreground">Recent Activity</h3>
+                  <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
+                    View all <ChevronRight className="h-3 w-3" />
+                  </button>
                 </div>
-              ))}
+                <div className="divide-y divide-border/40">
+                  {recentActivity.length > 0 ? recentActivity.map((item) => (
+                    <div key={item.id} className="flex items-start gap-3 px-5 py-3">
+                      <ActivityIcon type={item.type} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] leading-snug text-foreground">{item.text}</p>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">{item.time}</p>
+                      </div>
+                    </div>
+                  )) : (
+                    <div className="px-5 py-8 text-center text-sm text-muted-foreground">
+                      {isLoading ? <Loader2 className="h-5 w-5 animate-spin mx-auto" /> : 'No recent activity'}
+                    </div>
+                  )}
+                </div>
+              </Card>
             </div>
-          </Card>
-        </div>
-      </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

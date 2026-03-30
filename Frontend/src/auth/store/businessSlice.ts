@@ -1,7 +1,16 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { Business } from '../../mockData';
-import { MOCK_BUSINESSES } from '../../mockData';
 import { logout } from './authSlice';
+
+export interface Business {
+  id: string;
+  name: string;
+  description: string;
+  websiteUrl: string;
+  instagramHandle: string;
+  brandColor: string;
+  location: string;
+  isActive: boolean;
+}
 
 function withConsistentActiveFlags(businesses: Business[]): Business[] {
   if (businesses.length === 0) return businesses;
@@ -10,16 +19,12 @@ function withConsistentActiveFlags(businesses: Business[]): Business[] {
   return businesses.map((b) => ({ ...b, isActive: b.id === keepId }));
 }
 
-const initialBusinesses = withConsistentActiveFlags(
-  MOCK_BUSINESSES.map((b) => ({ ...b })),
-);
-
 interface BusinessState {
   businesses: Business[];
 }
 
 const initialState: BusinessState = {
-  businesses: initialBusinesses,
+  businesses: [],
 };
 
 const businessSlice = createSlice({
@@ -65,7 +70,7 @@ const businessSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder.addCase(logout, () => ({
-      businesses: withConsistentActiveFlags(MOCK_BUSINESSES.map((b) => ({ ...b }))),
+      businesses: [],
     }));
   },
 });

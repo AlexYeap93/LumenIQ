@@ -1,11 +1,13 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { PlanSelectionModal } from '../modals/PlanSelectionModal';
-import logoImage from '../components/photos/LumenIQFull.png';
+import { PlanSelectionContent } from '../modals/PlanSelectionModal';
+import logoImage from '../components/photos/LumenIQClear.png';
+import logoImageFull from '../components/photos/LumenIQFull.png';
 import {
   validateEmail,
   validatePhone,  
@@ -23,15 +25,15 @@ import {
   CreditCard,
   Sparkles,
   Check,
-  ChevronRight,
   Zap,
   ShieldCheck,
   LineChart,
+  Loader2,
 } from 'lucide-react';
-
-interface OnboardingWizardProps {
-  onComplete: () => void;
-}
+import { onboardingApi } from '../api/onboarding';
+import { plansApi } from '../api/plans';
+import { useAuth } from '../auth/hooks/useAuth';
+import type { PlanStream } from '../types/plans';
 
 interface OnboardingData {
   firstName: string;
@@ -66,6 +68,15 @@ const valueProps = [
   { icon: LineChart, text: 'Real engagement, tracked automatically' },
 ];
 
+function planLabelFromStreams(streams: PlanStream[], planId?: string): string {
+  if (!planId) return '';
+  for (const s of streams) {
+    const p = s.plans.find((pl) => pl.id === planId);
+    if (p) return p.name;
+  }
+  return planId;
+}
+
 const slideVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 40 : -40,
@@ -81,22 +92,55 @@ const slideVariants = {
   }),
 };
 
-export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+export function OnboardingWizard() {
+  const { user, signup: authSignup, completeOnboarding, updateUser, fetchProfileAndBusinesses } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
   const totalSteps = 5;
-  const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [planStreams, setPlanStreams] = useState<PlanStream[]>([]);
   const formRef = useRef<HTMLDivElement>(null);
 
+  const navState = location.state as {
+    businessType?: 'digital' | 'physical';
+    email?: string;
+    password?: string;
+  } | null;
+
+  const isSignupMode = !!navState?.email && !!navState?.password;
+
+  useEffect(() => {
+    if (!isSignupMode && !user) {
+      navigate('/signup', { replace: true });
+    }
+  }, [isSignupMode, user, navigate]);
+
   const [data, setData] = useState<Partial<OnboardingData>>({
-    businessType: 'digital',
+    email: navState?.email ?? user?.email ?? '',
+    businessType: navState?.businessType ?? 'digital',
     b2bOrB2c: 'b2c',
-    brandColor: '#3b82f6',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  useEffect(() => {
+    plansApi.list().then(setPlanStreams).catch(() => {});
+  }, []);
+
+  const filteredPlanStreams = useMemo(
+    () => planStreams.filter(s => s.id === data.businessType),
+    [planStreams, data.businessType],
+  );
+
   const updateData = useCallback((field: keyof OnboardingData, value: string) => {
-    setData(prev => ({ ...prev, [field]: value }));
+    setData(prev => {
+      const next: Partial<OnboardingData> = { ...prev, [field]: value };
+      if (field === 'businessType' && value !== prev.businessType) {
+        delete next.selectedPlan;
+      }
+      return next;
+    });
     if (errors[field]) {
       setErrors(prev => {
         const next = { ...prev };
@@ -157,14 +201,56 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     return errorKeys.length === 0;
   };
 
-  const handleNext = () => {
+  const handleFinish = async () => {
+    setIsSubmitting(true);
+    try {
+      if (isSignupMode) {
+        await authSignup(navState!.email!, navState!.password!);
+      }
+
+      await onboardingApi.complete({
+        user: {
+          first_name: data.firstName || undefined,
+          last_name: data.lastName || undefined,
+          phone: data.phone || undefined,
+        },
+        business: {
+          name: data.businessName!,
+          business_type: data.businessType,
+          description: data.businessDescription || undefined,
+          b2b_or_b2c: data.b2bOrB2c,
+          website_url: data.websiteUrl || undefined,
+          instagram_handle: data.instagramHandle || undefined,
+          target_location: data.targetLocation || undefined,
+          ideal_customer: data.idealCustomer || undefined,
+          products_services: data.productsServices || undefined,
+          industry_niche: data.industryNiche || undefined,
+        },
+        plan_id: data.selectedPlan || undefined,
+      });
+
+      completeOnboarding();
+      updateUser({ firstName: data.firstName, lastName: data.lastName });
+      await fetchProfileAndBusinesses('');
+
+      toast.success('Welcome to LumenIQ — let\'s build your first week.');
+      navigate('/app/dashboard', { replace: true });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to complete setup';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleNext = async () => {
     if (!validateStep()) return;
+
     if (step < totalSteps) {
       setDirection(1);
       setStep(s => s + 1);
     } else {
-      toast.success('Welcome to LumenIQ — let\'s build your first week.');
-      onComplete();
+      await handleFinish();
     }
   };
 
@@ -244,6 +330,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 value={data.email || ''}
                 onChange={(e) => updateData('email', e.target.value)}
                 className={fieldClasses('email')}
+                disabled={isSignupMode || !!user?.email}
               />
             </div>
 
@@ -351,22 +438,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 onChange={(e) => updateData('businessDescription', e.target.value)}
                 className={`min-h-24 ${textareaBase}`}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="brandColor" className="text-sm font-medium text-slate-700">
-                Brand color <span className="text-slate-400 font-normal">(optional)</span>
-              </Label>
-              <div className="flex items-center gap-3">
-                <input
-                  id="brandColor"
-                  type="color"
-                  value={data.brandColor || '#3b82f6'}
-                  onChange={(e) => updateData('brandColor', e.target.value)}
-                  className="h-10 w-10 cursor-pointer rounded-xl border border-slate-200 bg-transparent p-0.5"
-                />
-                <span className="text-sm text-slate-500 font-mono">{data.brandColor || '#3b82f6'}</span>
-              </div>
             </div>
           </motion.div>
         );
@@ -490,21 +561,28 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             </div>
 
             <div className="rounded-2xl border border-slate-200/80 bg-white p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Selected plan</p>
-                  <p className="text-xl font-outfit text-slate-900 mt-1">
-                    {data.selectedPlan || 'No plan selected'}
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  onClick={() => setIsPlanModalOpen(true)}
-                  className="gradient-blue-primary text-white hover:opacity-90 text-base h-11 px-5 gap-2"
-                >
-                  Browse plans
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
+              <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Selected plan</p>
+              <p className="text-xl font-outfit text-slate-900 mt-1">
+                {data.selectedPlan
+                  ? planLabelFromStreams(filteredPlanStreams, data.selectedPlan)
+                  : 'No plan selected'}
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden">
+              <div className="border-b border-slate-200/80 bg-slate-50/80 px-5 py-4">
+                <h3 className="text-base font-medium font-outfit text-slate-900">Compare plans</h3>
+                <p className="text-sm text-slate-500 mt-0.5">
+                  Review pricing and features — your choice is saved when you continue.
+                </p>
+              </div>
+              <div className="p-4 sm:p-6 max-h-[min(70vh,920px)] overflow-y-auto">
+                <PlanSelectionContent
+                  currentPlanId={data.selectedPlan}
+                  onSelectPlan={(planId) => updateData('selectedPlan', planId)}
+                  streams={filteredPlanStreams}
+                  hideSelectionSummary
+                />
               </div>
             </div>
 
@@ -516,21 +594,11 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               >
                 <Check className="h-5 w-5 text-emerald-600 shrink-0" />
                 <p className="text-base text-emerald-700">
-                  <span className="font-medium">{data.selectedPlan}</span> selected — you can change this anytime in settings.
+                  <span className="font-medium">{planLabelFromStreams(filteredPlanStreams, data.selectedPlan)}</span>{' '}
+                  selected — you can change this anytime in settings.
                 </p>
               </motion.div>
             )}
-
-            {!data.selectedPlan && (
-              <p className="text-sm text-slate-400 text-center pt-2">You'll be able to compare features, pricing, and limits side by side.</p>
-            )}
-
-            <PlanSelectionModal
-              open={isPlanModalOpen}
-              onOpenChange={setIsPlanModalOpen}
-              currentPlanId={data.selectedPlan}
-              onSelectPlan={(planId) => updateData('selectedPlan', planId)}
-            />
           </motion.div>
         );
 
@@ -565,7 +633,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               {[
                 { label: 'Business', value: data.businessName || '—' },
                 { label: 'Type', value: data.businessType === 'digital' ? 'Digital' : 'Physical' },
-                { label: 'Plan', value: data.selectedPlan || '—' },
+                { label: 'Plan', value: planLabelFromStreams(planStreams, data.selectedPlan) || '—' },
                 { label: 'Location', value: data.targetLocation || 'Not specified' },
               ].map(row => (
                 <div key={row.label} className="flex items-center justify-between px-6 py-4">
@@ -598,7 +666,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         <div className="hidden lg:flex lg:w-96 xl:w-112 shrink-0 flex-col justify-between bg-gradient-to-b from-blue-500 to-blue-900 p-10 xl:p-12">
           <div className="space-y-14">
             <div className="flex items-center gap-2.5">
-              <img src={logoImage} alt="LumenIQ" className="h-9 w-auto" />
+              <img src={logoImage} alt="LumenIQ" className="h-12 w-auto" />
+              <p className="text-3xl font-outfit text-white">LumenIQ</p>
             </div>
 
             <nav className="space-y-1">
@@ -668,7 +737,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         {/* Right Panel */}
         <div className="flex flex-1 flex-col min-w-0">
           <div className="md:hidden flex items-center justify-between border-b border-slate-200/60 bg-white/60 backdrop-blur-sm px-5 py-4">
-            <img src={logoImage} alt="LumenIQ" className="h-8 w-auto" />
+            <img src={logoImageFull} alt="LumenIQ" className="h-10 w-auto" />
             <span className="text-sm text-slate-900">Step {step} of {totalSteps}</span>
           </div>
 
@@ -699,7 +768,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
               <Button
                 variant="ghost"
                 onClick={handleBack}
-                disabled={step === 1}
+                disabled={step === 1 || isSubmitting}
                 className={`text-base h-10 px-5 gap-2 transition-all text-black hover:text-black hover:bg-slate-100 ${
                   step === 1
                     ? 'text-black cursor-not-allowed'
@@ -723,12 +792,25 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
               <Button
                 onClick={handleNext}
-                disabled={step === 4 && !data.selectedPlan}
+                disabled={(step === 4 && !data.selectedPlan) || isSubmitting}
                 className="gradient-blue-primary text-white hover:opacity-90 text-base h-11 px-6 gap-2 shadow-lg shadow-blue-500/20 disabled:opacity-40 disabled:shadow-none"
               >
-                {step === totalSteps ? 'Launch LumenIQ' : 'Continue'}
-                {step < totalSteps && <ArrowRight className="h-4 w-4" />}
-                {step === totalSteps && <Sparkles className="h-4 w-4" />}
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : step === totalSteps ? (
+                  <>
+                    Launch LumenIQ
+                    <Sparkles className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </Button>
             </div>
           </div>

@@ -1,17 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSelector } from 'react-redux';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { CalendarView } from '../components/CalendarView';
 import { PostModal } from '../modals/PostModal';
 import { PostDetailModal } from '../modals/PostDetailModal';
 import { PostListModal } from '../modals/PostListModal';
-import { Plus, Calendar, FileText, CalendarDays, Layers, PenLine } from 'lucide-react';
-import { type CalendarPost, MOCK_CALENDAR_POSTS } from '../mockData';
+import { Plus, Calendar, FileText, CalendarDays, Layers, PenLine, Loader2 } from 'lucide-react';
+import type { RootState } from '../auth/store';
+import { calendarApi } from '../api/calendar';
+import { mapCalendarPostFromAPI } from '../types/calendar';
+import type { CalendarPost } from '../types/calendar';
 
 type Post = CalendarPost;
 
 export function CalendarPage() {
-  const [posts, setPosts] = useState<Post[]>(MOCK_CALENDAR_POSTS);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const activeBusiness = useSelector((state: RootState) =>
+    state.business.businesses.find((b) => b.isActive),
+  );
+  const businessId = activeBusiness?.id;
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -21,32 +31,79 @@ export function CalendarPage() {
   const [isListModalOpen, setIsListModalOpen] = useState(false);
   const [listFilter, setListFilter] = useState<'draft' | 'scheduled'>('scheduled');
 
+  const fetchPosts = useCallback(async () => {
+    if (!businessId) return;
+    setIsLoading(true);
+    try {
+      const apiPosts = await calendarApi.listPosts(businessId);
+      setPosts(apiPosts.map(mapCalendarPostFromAPI));
+    } catch {
+      // endpoint may not exist yet
+    } finally {
+      setIsLoading(false);
+    }
+  }, [businessId]);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
   const handleCreatePost = (date: Date) => {
     setSelectedDate(date);
     setSelectedPosts([]);
     setIsModalOpen(true);
   };
 
-  const handleSavePost = (postData: Partial<Post>) => {
-    const newPost: Post = {
-      id: Date.now().toString(),
-      caption: postData.caption || '',
-      createdDate: postData.createdDate || new Date(),
-      scheduledDate: postData.scheduledDate,
-      status: postData.status || 'draft',
-      images: postData.images
-    };
-    setPosts([...posts, newPost]);
+  const handleSavePost = async (postData: Partial<Post>) => {
+    if (!businessId) return;
+    try {
+      const created = await calendarApi.createPost(businessId, {
+        caption: postData.caption || '',
+        media: postData.images || [],
+        scheduled_at: postData.scheduledDate?.toISOString(),
+        status: postData.status || 'draft',
+      });
+      setPosts(prev => [...prev, mapCalendarPostFromAPI(created)]);
+    } catch {
+      const newPost: Post = {
+        id: Date.now().toString(),
+        caption: postData.caption || '',
+        createdDate: postData.createdDate || new Date(),
+        scheduledDate: postData.scheduledDate,
+        status: postData.status || 'draft',
+        images: postData.images,
+      };
+      setPosts(prev => [...prev, newPost]);
+    }
   };
 
-  const handleUpdatePost = (postId: string, updates: Partial<Post>) => {
-    setPosts(posts.map(post =>
-      post.id === postId ? { ...post, ...updates } : post
-    ));
+  const handleUpdatePost = async (postId: string, updates: Partial<Post>) => {
+    if (!businessId) return;
+    try {
+      const updated = await calendarApi.updatePost(businessId, postId, {
+        caption: updates.caption,
+        media: updates.images,
+        scheduled_at: updates.scheduledDate?.toISOString() ?? (updates.scheduledDate === undefined ? null : undefined),
+        status: updates.status,
+      });
+      setPosts(prev =>
+        prev.map(post => (post.id === postId ? mapCalendarPostFromAPI(updated) : post)),
+      );
+    } catch {
+      setPosts(prev =>
+        prev.map(post => (post.id === postId ? { ...post, ...updates } : post)),
+      );
+    }
   };
 
-  const handleDeletePost = (postId: string) => {
-    setPosts(posts.filter(post => post.id !== postId));
+  const handleDeletePost = async (postId: string) => {
+    if (!businessId) return;
+    try {
+      await calendarApi.deletePost(businessId, postId);
+    } catch {
+      // fall through to optimistic removal
+    }
+    setPosts(prev => prev.filter(post => post.id !== postId));
   };
 
   const handlePostClick = (post: Post) => {
@@ -101,7 +158,9 @@ export function CalendarPage() {
             <div className="flex items-start justify-between">
               <div className="space-y-3">
                 <p className="text-[13px] text-muted-foreground tracking-wide">Total Posts</p>
-                <p className="text-[28px] leading-none font-outfit text-foreground">{posts.length}</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : posts.length}
+                </p>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50">
                 <Layers className="h-5 w-5 text-blue-600" />
@@ -112,7 +171,9 @@ export function CalendarPage() {
             <div className="flex items-start justify-between">
               <div className="space-y-3">
                 <p className="text-[13px] text-muted-foreground tracking-wide">Scheduled</p>
-                <p className="text-[28px] leading-none font-outfit text-blue-600">{scheduledPosts.length}</p>
+                <p className="text-[28px] leading-none font-outfit text-blue-600">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : scheduledPosts.length}
+                </p>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50">
                 <CalendarDays className="h-5 w-5 text-emerald-600" />
@@ -123,7 +184,9 @@ export function CalendarPage() {
             <div className="flex items-start justify-between">
               <div className="space-y-3">
                 <p className="text-[13px] text-muted-foreground tracking-wide">Drafts</p>
-                <p className="text-[28px] leading-none font-outfit text-foreground">{draftPosts.length}</p>
+                <p className="text-[28px] leading-none font-outfit text-foreground">
+                  {isLoading ? <Loader2 className="h-6 w-6 animate-spin" /> : draftPosts.length}
+                </p>
               </div>
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-100">
                 <PenLine className="h-5 w-5 text-slate-500" />

@@ -1,18 +1,22 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface AuthUser {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  accountPlan?: string;
+  phone?: string;
+}
+
 interface AuthState {
   isAuthenticated: boolean;
   needsOnboarding: boolean;
   hasCompletedOnboarding: boolean;
-  user: {
-    id: string;
-    email: string;
-    firstName?: string;
-    lastName?: string;
-    avatarUrl?: string;
-    accountPlan?: string;
-  } | null;
+  user: AuthUser | null;
   token: string | null;
+  refreshToken: string | null;
 }
 
 const initialState: AuthState = {
@@ -21,30 +25,61 @@ const initialState: AuthState = {
   hasCompletedOnboarding: false,
   user: null,
   token: null,
+  refreshToken: null,
 };
 
 export const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    login: (state, action: PayloadAction<{ email: string; token: string }>) => {
+    login: (
+      state,
+      action: PayloadAction<{
+        email: string;
+        token: string;
+        refreshToken?: string;
+        user?: Partial<AuthUser>;
+      }>,
+    ) => {
       state.isAuthenticated = true;
-      state.hasCompletedOnboarding = true; // Existing users skip onboarding
+      state.hasCompletedOnboarding = true;
       state.user = {
-        id: 'mock-user-id',
+        id: action.payload.user?.id ?? '',
         email: action.payload.email,
+        ...action.payload.user,
       };
       state.token = action.payload.token;
+      state.refreshToken = action.payload.refreshToken ?? null;
     },
-    signup: (state, action: PayloadAction<{ email: string; token: string }>) => {
+    signup: (
+      state,
+      action: PayloadAction<{
+        email: string;
+        token: string;
+        refreshToken?: string;
+        user?: Partial<AuthUser>;
+      }>,
+    ) => {
       state.isAuthenticated = true;
-      state.needsOnboarding = true; // New users need onboarding
+      state.needsOnboarding = true;
       state.hasCompletedOnboarding = false;
       state.user = {
-        id: 'mock-user-id',
+        id: action.payload.user?.id ?? '',
         email: action.payload.email,
+        ...action.payload.user,
       };
       state.token = action.payload.token;
+      state.refreshToken = action.payload.refreshToken ?? null;
+    },
+    setTokens: (
+      state,
+      action: PayloadAction<{ token: string; refreshToken: string }>,
+    ) => {
+      state.token = action.payload.token;
+      state.refreshToken = action.payload.refreshToken;
+    },
+    setUser: (state, action: PayloadAction<AuthUser>) => {
+      state.user = action.payload;
     },
     completeOnboarding: (state) => {
       state.hasCompletedOnboarding = true;
@@ -56,8 +91,9 @@ export const authSlice = createSlice({
       state.hasCompletedOnboarding = false;
       state.user = null;
       state.token = null;
+      state.refreshToken = null;
     },
-    updateUser: (state, action: PayloadAction<Partial<AuthState['user']>>) => {
+    updateUser: (state, action: PayloadAction<Partial<AuthUser>>) => {
       if (state.user) {
         state.user = { ...state.user, ...action.payload };
       }
@@ -65,6 +101,7 @@ export const authSlice = createSlice({
   },
 });
 
-export const { login, signup, completeOnboarding, logout, updateUser } = authSlice.actions;
+export const { login, signup, setTokens, setUser, completeOnboarding, logout, updateUser } =
+  authSlice.actions;
 
 export default authSlice.reducer;

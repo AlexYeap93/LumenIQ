@@ -15,10 +15,10 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Label } from '../components/ui/label';
-import { type Photo, MOCK_PHOTOS } from '../mockData';
+import type { Photo } from '../types/photo';
 
 export function PhotoStoragePage() {
-  const [photos, setPhotos] = useState<Photo[]>(MOCK_PHOTOS);
+  const [photos, setPhotos] = useState<Photo[]>([]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
