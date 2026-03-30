@@ -13,12 +13,12 @@ class Settings(BaseSettings):
     refresh_token_expire_days: int = 7
 
     stripe_secret_key: str
-    stripe_webhook_secret: str = ""
+    stripe_webhook_secret: str
     stripe_publishable_key: str = ""
 
     app_env: str = "development"
     app_debug: bool = True
-    allowed_origins: str = "http://localhost:5173,http://localhost:5176,http://localhost:3000"
+    allowed_origins: str = "http://localhost:5176,http://localhost:3000"
     api_version_prefix: str = "/api"
 
     meta_app_id: str = ""

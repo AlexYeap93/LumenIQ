@@ -1,11 +1,6 @@
 from datetime import datetime
 from typing import Any
-from pydantic import BaseModel, Field
-
-PROFILE_JSON_FIELDS = frozenset({
-    "description", "brand_color", "b2b_or_b2c",
-    "target_location", "products_services", "industry_niche",
-})
+from pydantic import BaseModel
 
 
 class BusinessBase(BaseModel):
