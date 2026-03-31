@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Calendar } from 'lucide-react';
 import { Input } from './ui/input';
+import { LazyImage } from './LazyImage';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../auth/store';
 import { mediaApi, mapMediaToPhoto } from '../api/media';
@@ -111,7 +112,7 @@ export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
                 onClick={() => onSelectPhoto(photo.url)}
                 className="group relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-all"
               >
-                <img
+                <LazyImage
                   src={photo.url}
                   alt={photo.title}
                   className="w-full h-full object-cover"

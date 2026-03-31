@@ -21,6 +21,7 @@ import { useSelector } from 'react-redux';
 import type { RootState } from '../auth/store';
 import { mediaApi, mapMediaToPhoto } from '../api/media';
 import { toast } from 'sonner';
+import { LazyImage } from '../components/LazyImage';
 
 export function PhotoStoragePage() {
   const [photos, setPhotos] = useState<Photo[]>([]);
@@ -260,7 +261,7 @@ export function PhotoStoragePage() {
               onClick={() => setSelectedPhoto(photo)}
               className="group relative aspect-square cursor-pointer overflow-hidden rounded-xl border border-border/60 bg-card transition-shadow hover:shadow-md"
             >
-              <img
+              <LazyImage
                 src={photo.url}
                 alt={photo.title}
                 className="h-full w-full object-cover"
@@ -325,7 +326,7 @@ export function PhotoStoragePage() {
                 onClick={() => setSelectedPhoto(photo)}
                 className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-muted/30 cursor-pointer"
               >
-                <img
+                <LazyImage
                   src={photo.url}
                   alt={photo.title}
                   className="h-14 w-14 shrink-0 rounded-lg object-cover"
@@ -403,7 +404,7 @@ export function PhotoStoragePage() {
             </button>
             <div className="grid md:grid-cols-2">
               <div className="p-4 md:p-5">
-                <img
+                <LazyImage
                   src={selectedPhoto.url}
                   alt="Selected"
                   className="h-full w-full rounded-lg object-cover"
