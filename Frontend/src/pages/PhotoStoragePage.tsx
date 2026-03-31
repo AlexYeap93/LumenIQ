@@ -249,7 +249,10 @@ export function PhotoStoragePage() {
       {isLoading && viewMode === 'grid' && (
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="aspect-square rounded-xl border border-border/60 bg-card animate-pulse" />
+            <div
+              key={i}
+              className="aspect-square rounded-xl border border-border/60 bg-zinc-500/35 dark:bg-zinc-700/60 animate-pulse"
+            />
           ))}
         </div>
       )}
@@ -307,7 +310,7 @@ export function PhotoStoragePage() {
           <div className="divide-y divide-border/40">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-5 py-3.5 animate-pulse">
-                <div className="h-14 w-14 shrink-0 rounded-lg bg-muted" />
+                <div className="h-14 w-14 shrink-0 rounded-lg bg-zinc-500/35 dark:bg-zinc-700/60" />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 bg-muted rounded w-1/3" />
                   <div className="h-3 bg-muted rounded w-1/4" />

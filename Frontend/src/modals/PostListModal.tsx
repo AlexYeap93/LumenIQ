@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
+import { X, Calendar, Clock, Image as ImageIcon, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import type { CalendarPost as Post } from '../types/calendar';
 
@@ -7,7 +7,7 @@ interface PostListModalProps {
   isOpen: boolean;
   onClose: () => void;
   posts: Post[];
-  filter: 'draft' | 'scheduled';
+  filter: 'draft' | 'scheduled' | 'posted';
   onPostClick: (post: Post) => void;
 }
 
@@ -30,9 +30,10 @@ export function PostListModal({
   };
 
   const groupedPosts = posts.reduce((acc, post) => {
-    const date = filter === 'scheduled' && post.scheduledDate 
-      ? new Date(post.scheduledDate.getFullYear(), post.scheduledDate.getMonth(), post.scheduledDate.getDate())
-      : new Date(post.createdDate.getFullYear(), post.createdDate.getMonth(), post.createdDate.getDate());
+    const dateSource = (filter === 'scheduled' || filter === 'posted') && post.scheduledDate
+      ? post.scheduledDate
+      : post.createdDate;
+    const date = new Date(dateSource.getFullYear(), dateSource.getMonth(), dateSource.getDate());
     
     const dateKey = date.toDateString();
     if (!acc[dateKey]) {
@@ -78,6 +79,10 @@ export function PostListModal({
                     <div className="w-10 h-10 rounded-lg bg-destructive/10 flex items-center justify-center">
                       <Calendar className="w-5 h-5 text-destructive" />
                     </div>
+                  ) : filter === 'posted' ? (
+                    <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+                      <CheckCircle className="w-5 h-5 text-green-500" />
+                    </div>
                   ) : (
                     <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
                       <ImageIcon className="w-5 h-5 text-muted-foreground" />
@@ -85,7 +90,7 @@ export function PostListModal({
                   )}
                   <div>
                     <h2 className="text-xl font-semibold text-foreground">
-                      {filter === 'scheduled' ? 'Scheduled Posts' : 'Draft Posts'}
+                      {filter === 'scheduled' ? 'Scheduled Posts' : filter === 'posted' ? 'Posted' : 'Draft Posts'}
                     </h2>
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {posts.length} {posts.length === 1 ? 'post' : 'posts'}
@@ -107,6 +112,8 @@ export function PostListModal({
                     <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
                       {filter === 'scheduled' ? (
                         <Calendar className="w-8 h-8 text-muted-foreground" />
+                      ) : filter === 'posted' ? (
+                        <CheckCircle className="w-8 h-8 text-muted-foreground" />
                       ) : (
                         <ImageIcon className="w-8 h-8 text-muted-foreground" />
                       )}
@@ -204,10 +211,12 @@ export function PostListModal({
                                         className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium ${
                                           post.status === 'draft'
                                             ? 'bg-muted text-muted-foreground'
-                                            : 'bg-destructive/10 text-destructive'
+                                            : post.status === 'posted'
+                                              ? 'bg-green-500/10 text-green-500'
+                                              : 'bg-destructive/10 text-destructive'
                                         }`}
                                       >
-                                        {post.status === 'draft' ? 'Draft' : 'Scheduled'}
+                                        {post.status === 'draft' ? 'Draft' : post.status === 'posted' ? 'Posted' : 'Scheduled'}
                                       </span>
                                     </div>
                                   </div>

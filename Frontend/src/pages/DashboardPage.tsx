@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import {
@@ -26,7 +27,7 @@ import {
   Plus,
   ArrowUpRight,
   Clock,
-  Send,
+  Images,
   FileText,
   Sparkles,
   Target,
@@ -190,6 +191,7 @@ function SkeletonCard() {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<TimeRange>('7D');
 
   // Per-section loading flags so each section renders as soon as its data
@@ -438,9 +440,6 @@ export function DashboardPage() {
                     <h3 className="text-[15px] font-outfit text-foreground">Top Performing Posts</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">Highest engagement this period</p>
                   </div>
-                  <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                    View all <ChevronRight className="h-3 w-3" />
-                  </button>
                 </div>
                 <div className="divide-y divide-border/40">
                   {topPosts.length > 0 ? topPosts.map((post) => (
@@ -481,21 +480,21 @@ export function DashboardPage() {
                   <h3 className="text-[15px] font-outfit text-foreground">Quick Actions</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 p-4">
-                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                  <button onClick={() => navigate('/app/chat')} className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg gradient-blue-primary text-white shadow-sm"><Sparkles className="h-4 w-4" /></div>
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-blue-700">AI Planner</span>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-blue-700">Planner</span>
                   </button>
-                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                  <button onClick={() => navigate('/app/calendar', { state: { action: 'new-post' } })} className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm"><Plus className="h-4 w-4" /></div>
                     <span className="text-xs font-medium text-muted-foreground group-hover:text-emerald-700">New Post</span>
                   </button>
-                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                  <button onClick={() => navigate('/app/calendar', { state: { action: 'drafts' } })} className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-500 text-white shadow-sm"><FileText className="h-4 w-4" /></div>
                     <span className="text-xs font-medium text-muted-foreground group-hover:text-violet-700">Drafts</span>
                   </button>
-                  <button className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
-                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm"><Send className="h-4 w-4" /></div>
-                    <span className="text-xs font-medium text-muted-foreground group-hover:text-amber-700">Publish</span>
+                  <button onClick={() => navigate('/app/photo-storage')} className="flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-muted/30 p-3.5 transition-all hover:border-blue-200 hover:bg-blue-50/50 group">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-white shadow-sm"><Images className="h-4 w-4" /></div>
+                    <span className="text-xs font-medium text-muted-foreground group-hover:text-amber-700">View Media</span>
                   </button>
                 </div>
               </Card>
@@ -546,9 +545,6 @@ export function DashboardPage() {
                     <h3 className="text-[15px] font-outfit text-foreground">Upcoming Posts</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">Next 48 hours</p>
                   </div>
-                  <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                    Calendar <ArrowUpRight className="h-3 w-3" />
-                  </button>
                 </div>
                 <div className="divide-y divide-border/40">
                   {upcomingPosts.length > 0 ? upcomingPosts.map((post) => (
@@ -575,7 +571,7 @@ export function DashboardPage() {
               </Card>
 
               {/* Recent Activity */}
-              <Card className="border-border/60 bg-card p-0">
+              {/* <Card className="border-border/60 bg-card p-0">
                 <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
                   <h3 className="text-[15px] font-outfit text-foreground">Recent Activity</h3>
                   <button className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
@@ -597,7 +593,7 @@ export function DashboardPage() {
                     </div>
                   )}
                 </div>
-              </Card>
+              </Card> */}
             </div>
           </div>
         </>
