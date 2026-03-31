@@ -9,16 +9,17 @@ interface Post {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled';
+  status: 'draft' | 'scheduled' | 'posted';
 }
 
 interface CalendarViewProps {
   posts: Post[];
+  isLoading?: boolean;
   onPostClick: (post: Post) => void;
   onCreatePost: (date: Date) => void;
 }
 
-export function CalendarView({ posts, onPostClick, onCreatePost }: CalendarViewProps) {
+export function CalendarView({ posts, isLoading, onPostClick, onCreatePost }: CalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const monthNames = [
@@ -130,38 +131,56 @@ export function CalendarView({ posts, onPostClick, onCreatePost }: CalendarViewP
         ))}
 
         {/* Calendar days */}
-        {calendarDays.map((day, index) => {
-          if (day === null) {
-            return <div key={`empty-${index}`} className="aspect-square" />;
-          }
+        {isLoading
+          ? calendarDays.map((day, index) =>
+              day === null ? (
+                <div key={`empty-${index}`} className="aspect-square" />
+              ) : (
+                <div
+                  key={day}
+                  className="aspect-square rounded-lg border border-border/60 bg-card p-2 animate-pulse"
+                >
+                  <div className="h-4 w-6 bg-muted rounded mb-2" />
+                  <div className="h-5 bg-muted rounded" />
+                </div>
+              ),
+            )
+          : calendarDays.map((day, index) => {
+              if (day === null) {
+                return <div key={`empty-${index}`} className="aspect-square" />;
+              }
 
-          const postsForDate = getPostsForDate(day);
-          const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+              const postsForDate = getPostsForDate(day);
+              const date = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
 
-          return (
-            <CalendarDay
-              key={day}
-              day={day}
-              isToday={isToday(day)}
-              isPast={isPast(day)}
-              posts={postsForDate}
-              date={date}
-              onPostClick={onPostClick}
-              onCreatePost={onCreatePost}
-            />
-          );
-        })}
+              return (
+                <CalendarDay
+                  key={day}
+                  day={day}
+                  isToday={isToday(day)}
+                  isPast={isPast(day)}
+                  posts={postsForDate}
+                  date={date}
+                  onPostClick={onPostClick}
+                  onCreatePost={onCreatePost}
+                />
+              );
+            })}
       </div>
 
       {/* Legend */}
       <div className="flex items-center gap-6 mt-6 pt-6 border-t border-border">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-muted-foreground" />
+          <div className="w-3 h-3 rounded-full bg-yellow-600" />
           <span className="text-sm text-muted-foreground">Draft</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-destructive" />
+          <div className="w-3 h-3 rounded-full bg-red-600" />
           <span className="text-sm text-muted-foreground">Scheduled</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-green-600" />
+          <span className="text-sm text-muted-foreground">Posted</span>
         </div>
       </div>
     </div>

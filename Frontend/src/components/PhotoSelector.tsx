@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Search, Calendar } from 'lucide-react';
 import { Input } from './ui/input';
+import { LazyImage } from './LazyImage';
 import { useSelector } from 'react-redux';
 import type { RootState } from '../auth/store';
 import { mediaApi, mapMediaToPhoto } from '../api/media';
@@ -15,6 +16,7 @@ interface PhotoSelectorProps {
 export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const activeBusiness = useSelector((state: RootState) =>
     state.business.businesses.find((b: { isActive: boolean }) => b.isActive),
@@ -22,9 +24,12 @@ export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
 
   useEffect(() => {
     if (activeBusiness?.id) {
+      setIsLoading(true);
       mediaApi.list(activeBusiness.id).then((data) => {
         if (Array.isArray(data)) setPhotos(data.map(mapMediaToPhoto));
-      }).catch(() => {});
+      }).catch(() => {}).finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
     }
   }, [activeBusiness?.id]);
 
@@ -89,7 +94,16 @@ export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
         {/* Photo Grid */}
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {filteredPhotos.map((photo, index) => (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-square rounded-lg bg-accent animate-pulse" />
+              ))
+            ) : filteredPhotos.length === 0 ? (
+              <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
+                No photos found
+              </div>
+            ) : null}
+            {!isLoading && filteredPhotos.map((photo, index) => (
               <motion.button
                 key={photo.id}
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -98,7 +112,7 @@ export function PhotoSelector({ onSelectPhoto, onClose }: PhotoSelectorProps) {
                 onClick={() => onSelectPhoto(photo.url)}
                 className="group relative aspect-square rounded-lg overflow-hidden border-2 border-transparent hover:border-primary transition-all"
               >
-                <img
+                <LazyImage
                   src={photo.url}
                   alt={photo.title}
                   className="w-full h-full object-cover"

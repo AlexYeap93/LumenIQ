@@ -4,7 +4,7 @@ export interface CalendarPost {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled';
+  status: 'draft' | 'scheduled' | 'posted';
 }
 
 export interface CalendarPostAPI {
@@ -27,6 +27,6 @@ export function mapCalendarPostFromAPI(post: CalendarPostAPI): CalendarPost {
     caption: post.caption ?? '',
     createdDate: new Date(post.created_at),
     scheduledDate: post.scheduled_at ? new Date(post.scheduled_at) : undefined,
-    status: post.status === 'scheduled' ? 'scheduled' : 'draft',
+    status: post.status === 'scheduled' ? 'scheduled' : post.status === 'posted' ? 'posted' : 'draft',
   };
 }

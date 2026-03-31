@@ -7,7 +7,7 @@ interface Post {
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
-  status: 'draft' | 'scheduled';
+  status: 'draft' | 'scheduled' | 'posted';
 }
 
 interface CalendarDayProps {
@@ -89,9 +89,11 @@ export function CalendarDay({
                   <div className={`absolute top-0.5 right-0.5 text-[9px] px-1.5 py-0.5 rounded font-semibold ${
                     post.status === 'draft'
                       ? 'bg-yellow-500 text-white'
-                      : 'bg-green-500 text-white'
+                      : post.status === 'posted'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-red-500 text-white'
                   }`}>
-                    {post.status === 'draft' ? 'DRAFT' : 'SCHEDULED'}
+                    {post.status === 'draft' ? 'DRAFT' : post.status === 'posted' ? 'POSTED' : 'SCHEDULED'}
                   </div>
                   {/* Time overlay */}
                   {post.scheduledDate && (
@@ -111,11 +113,13 @@ export function CalendarDay({
                   <div className={`w-full h-full flex items-center justify-center ${
                     post.status === 'draft'
                       ? 'bg-gradient-to-br from-yellow-50 to-yellow-100'
-                      : 'bg-gradient-to-br from-green-50 to-green-100'
+                      : post.status === 'posted'
+                        ? 'bg-gradient-to-br from-green-50 to-green-100'
+                        : 'bg-gradient-to-br from-red-50 to-red-100'
                   }`}>
                     <div className="text-center">
                       <div className="text-2xl mb-1">
-                        {post.status === 'draft' ? '📝' : '📅'}
+                        {post.status === 'draft' ? '📝' : post.status === 'posted' ? '✅' : '📅'}
                       </div>
                     </div>
                   </div>
@@ -123,9 +127,11 @@ export function CalendarDay({
                   <div className={`absolute top-0.5 right-0.5 text-[9px] px-1.5 py-0.5 rounded font-semibold ${
                     post.status === 'draft'
                       ? 'bg-yellow-500 text-white'
-                      : 'bg-green-500 text-white'
+                      : post.status === 'posted'
+                        ? 'bg-green-500 text-white'
+                        : 'bg-red-500 text-white'
                   }`}>
-                    {post.status === 'draft' ? 'DRAFT' : 'SCHEDULED'}
+                    {post.status === 'draft' ? 'DRAFT' : post.status === 'posted' ? 'POSTED' : 'SCHEDULED'}
                   </div>
                   {/* Time overlay */}
                   {post.scheduledDate && (
