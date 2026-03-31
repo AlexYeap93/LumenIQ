@@ -1,4 +1,14 @@
-import logging
+import os
+
+# ── SSL certificate fix for Python 3.13 on macOS ──────────────────────────────
+# Python 3.13 installed from python.org ships with no CA bundle, so every
+# outbound TLS connection times out or fails cert verification. Setting these
+# environment variables before any network code runs tells Python's ssl module,
+# httpx, requests, and the Supabase client to use certifi's trusted CA bundle.
+import certifi
+os.environ.setdefault("SSL_CERT_FILE", certifi.where())
+os.environ.setdefault("REQUESTS_CA_BUNDLE", certifi.where())
+# ──────────────────────────────────────────────────────────────────────────────
 
 from fastapi import FastAPI
 
@@ -6,12 +16,6 @@ from app.core.configuration import settings
 from app.routers import api_router
 from app.middleware.cors import configure_cors
 from app.middleware.rate_limiter import configure_rate_limiter
-from app.middleware.request_logging import configure_request_logging
-
-logging.basicConfig(
-    level=logging.DEBUG if settings.app_debug else logging.INFO,
-    format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
-)
 
 application = FastAPI(
     title="LumenIQ API",
@@ -23,7 +27,6 @@ application = FastAPI(
 
 configure_cors(application)
 configure_rate_limiter(application)
-configure_request_logging(application)
 
 application.include_router(api_router, prefix=settings.api_version_prefix)
 
