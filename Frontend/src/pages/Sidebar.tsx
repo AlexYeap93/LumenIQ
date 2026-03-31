@@ -20,10 +20,8 @@ import { cn } from '../components/ui/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { useAuth } from '../auth/hooks/useAuth';
 import { useBusiness } from '../auth/hooks/useBusiness';
-import type { Business } from '../mockData';
+import type { Business } from '../auth/store/businessSlice';
 import logoIcon from '../components/photos/LumenIQClear.png';
-
-const DEFAULT_ACCOUNT_PLAN = 'Standard Plan';
 
 interface SidebarProps {
   children: ReactNode;
@@ -81,7 +79,7 @@ function SidebarUserProfile({
   collapsed: boolean;
 }) {
   const displayName = getUserProfileName(user);
-  const planLabel = user?.accountPlan ?? DEFAULT_ACCOUNT_PLAN;
+  const planLabel = user?.accountPlan ?? ' ';
   const initials = getInitialsFromName(displayName);
 
   const avatar = (
@@ -255,9 +253,9 @@ export function Sidebar({ children }: SidebarProps) {
 
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { businesses, activeBusiness, switchBusiness } = useBusiness();
-
+  const planLabel = user?.accountPlan ?? '';
   const multiBusiness = businesses.length > 1;
   const workspace = activeBusiness ?? businesses[0];
 
@@ -273,9 +271,10 @@ export function Sidebar({ children }: SidebarProps) {
     setIsMobileMenuOpen(false);
   };
 
-  const handleLogout = () => {
-    navigate('/');
+  const handleLogout = async () => {
     setHeaderMenuOpen(false);
+    await logout();
+    navigate('/');
   };
 
   const openSettingsFromMenu = () => {
@@ -293,8 +292,6 @@ export function Sidebar({ children }: SidebarProps) {
   };
 
   const isActive = (path: string) => location.pathname === path;
-
-  const displayName = formatDisplayName(user?.email);
 
   useEffect(() => {
     if (!headerMenuOpen) return;
@@ -314,6 +311,7 @@ export function Sidebar({ children }: SidebarProps) {
 
   const sidebarShellClass =
     'hidden md:flex flex-col flex-shrink-0 relative z-10 border-r border-slate-800/80 bg-[#0f172a] transition-[width] duration-200 ease-out';
+
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
@@ -377,12 +375,12 @@ export function Sidebar({ children }: SidebarProps) {
                   </>
                 ) : (
                   <>
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-600">
-                      <img src={logoIcon} alt="" className="h-6 w-6 object-contain" aria-hidden />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white">
+                      <img src={logoIcon} alt="" className="h-8 w-8 object-contain" aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{displayName}</p>
-                      <p className="text-[12px] text-slate-500 font-outfit">Pro Plan</p>
+                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{businesses[0].name}</p>
+                      <p className="text-[12px] text-slate-500 font-outfit">{planLabel}</p>
                     </div>
                   </>
                 )}
@@ -573,8 +571,8 @@ export function Sidebar({ children }: SidebarProps) {
                       <img src={logoIcon} alt="" className="h-6 w-6 object-contain" aria-hidden />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{displayName}</p>
-                      <p className="text-[12px] text-slate-500 font-outfit">Pro Plan</p>
+                      <p className="truncate text-[14px] font-semibold text-white font-outfit">{businesses[0].name}</p>
+                      <p className="text-[12px] text-slate-500 font-outfit">{planLabel}</p>
                     </div>
                   </div>
                 )}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useBusiness } from '../auth/hooks/useBusiness';
 import { 
   User, 
@@ -21,17 +21,69 @@ import { Skeleton } from '../components/ui/skeleton';
 import { AddBusinessModal } from '../modals/AddBusinessModal';
 import { PlanSelectionModal } from '../modals/PlanSelectionModal';
 import { PaymentMethodModal } from '../modals/PaymentMethodModal';
+import { plansApi } from '../api/plans';
+import { authApi } from '../api/auth';
+import { businessApi, mapBusinessToFrontend } from '../api/businesses';
+import type { Business } from '../auth/store/businessSlice';
+import type { PlanStream } from '../types/plans';
+import type { CurrentPlan, NotificationPreferences, PersonalInfo, PaymentMethod } from '../types';
+import { useAuth } from '../auth/hooks/useAuth';
+import { toast } from 'sonner';
 import {
-  type Business,
-  type CurrentPlan,
-  MOCK_CURRENT_PLAN,
-  MOCK_PERSONAL_INFO,
-  MOCK_NOTIFICATION_DEFAULTS,
-  MOCK_PAYMENT_METHOD,
-} from '../mockData';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+
+const FREE_PLAN: CurrentPlan = {
+  name: 'Free',
+  price: 0,
+  type: 'Digital Business',
+  billingPeriod: 'monthly',
+  maxBrands: 1,
+  features: ['1 brand', 'Basic scheduling'],
+};
+
+function resolveCurrentPlan(
+  accountPlan: string | undefined,
+  planStreams: PlanStream[],
+): CurrentPlan {
+  if (!accountPlan || planStreams.length === 0) return FREE_PLAN;
+
+  for (const stream of planStreams) {
+    const match = stream.plans.find((p) => p.id === accountPlan);
+    if (match) {
+      const price = parseFloat(match.priceLabel.replace(/[^0-9.]/g, '')) || 0;
+      const brandsFeature = match.features?.find((f) => /brand/i.test(f));
+      const maxBrands = brandsFeature
+        ? parseInt(brandsFeature.match(/(\d+)/)?.[1] ?? '1')
+        : match.isEnterprise
+          ? 999
+          : 1;
+
+      const type = stream.id === 'digital' ? 'Digital Business' : 'Physical Business';
+
+      return {
+        name: match.name,
+        price,
+        type,
+        billingPeriod: 'monthly',
+        maxBrands,
+        features: match.features ?? [],
+      };
+    }
+  }
+
+  return FREE_PLAN;
+}
 
 export function SettingsPage() {
-  const currentPlan: CurrentPlan = MOCK_CURRENT_PLAN;
+  const { user, updateUser } = useAuth();
 
   const {
     businesses,
@@ -41,28 +93,63 @@ export function SettingsPage() {
     removeBusiness: removeBusinessFromStore,
     updateBusinessFields,
   } = useBusiness();
+
+  const [planStreams, setPlanStreams] = useState<PlanStream[]>([]);
   const [isAddBusinessOpen, setIsAddBusinessOpen] = useState(false);
   const [newBusiness, setNewBusiness] = useState<Partial<Business>>({
     name: '',
     description: '',
     websiteUrl: '',
     instagramHandle: '',
-    brandColor: '#3b82f6',
     location: ''
   });
 
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATION_DEFAULTS);
+  const [notifications, setNotifications] = useState<NotificationPreferences>({
+    emailNotifications: true,
+    postReminders: true,
+    weeklyReports: false,
+    aiSuggestions: true,
+  });
 
-  const [personalInfo, setPersonalInfo] = useState(MOCK_PERSONAL_INFO);
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
 
+  const [paymentMethod] = useState<PaymentMethod | null>(null);
+
+  const [editingBusinessInfo, setEditingBusinessInfo] = useState<Partial<Business>>({});
   const [isEditingBusiness, setIsEditingBusiness] = useState(false);
   const [isEditingPersonal, setIsEditingPersonal] = useState(false);
   const [isSavingBusiness, setIsSavingBusiness] = useState(false);
   const [isSavingPersonal, setIsSavingPersonal] = useState(false);
   const [isPlanModalOpen, setIsPlanModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [businessIdPendingDelete, setBusinessIdPendingDelete] = useState<string | null>(null);
 
-  const currentPlanId = `${
+  useEffect(() => {
+    plansApi.list().then(setPlanStreams).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!isEditingPersonal && user) {
+      setPersonalInfo({
+        firstName: user.firstName ?? '',
+        lastName: user.lastName ?? '',
+        email: user.email ?? '',
+        phone: user.phone ?? '',
+      });
+    }
+  }, [user?.firstName, user?.lastName, user?.email, user?.phone, isEditingPersonal]);
+
+  const currentPlan = useMemo(
+    () => resolveCurrentPlan(user?.accountPlan, planStreams),
+    [user?.accountPlan, planStreams],
+  );
+
+  const currentPlanId = user?.accountPlan ?? `${
     currentPlan.type.toLowerCase().includes('digital') ? 'digital' : 'physical'
   }-${currentPlan.name.toLowerCase()}`;
 
@@ -100,34 +187,85 @@ export function SettingsPage() {
 
   const handleDeleteBusiness = (id: string) => {
     if (businesses.length <= 1) {
-      alert('You must have at least one business');
+      toast.error('You must have at least one business');
       return;
     }
-    if (window.confirm('Are you sure you want to delete this business?')) {
-      removeBusinessFromStore(id);
+    setBusinessIdPendingDelete(id);
+  };
+
+  const confirmDeleteBusiness = () => {
+    if (businessIdPendingDelete) {
+      removeBusinessFromStore(businessIdPendingDelete);
+    }
+    setBusinessIdPendingDelete(null);
+  };
+
+  const handleStartEditingBusiness = () => {
+    const b = activeBusiness ?? businesses[0];
+    if (!b) return;
+    setEditingBusinessInfo({
+      name: b.name,
+      description: b.description,
+      websiteUrl: b.websiteUrl,
+      instagramHandle: b.instagramHandle,
+      location: b.location,
+    });
+    setIsEditingBusiness(true);
+  };
+
+  const handleUpdateBusinessField = (field: keyof Business, value: string) => {
+    setEditingBusinessInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveBusiness = async () => {
+    const b = activeBusiness ?? businesses[0];
+    if (!b) return;
+    setIsEditingBusiness(false);
+    setIsSavingBusiness(true);
+    try {
+      const response = await businessApi.update(b.id, {
+        name: editingBusinessInfo.name ?? b.name,
+        description: editingBusinessInfo.description ?? b.description,
+        website_url: editingBusinessInfo.websiteUrl ?? b.websiteUrl,
+        instagram_handle: editingBusinessInfo.instagramHandle ?? b.instagramHandle,
+        target_location: editingBusinessInfo.location ?? b.location,
+      });
+      const mapped = mapBusinessToFrontend(response);
+      updateBusinessFields(b.id, mapped);
+    } catch {
+      setEditingBusinessInfo({});
+    } finally {
+      setIsSavingBusiness(false);
     }
   };
 
-  const handleUpdateBusiness = (field: keyof Business, value: string) => {
-    const b = activeBusiness ?? businesses[0];
-    if (!b) return;
-    updateBusinessFields(b.id, { [field]: value });
-  };
-
-  const handleSaveBusiness = () => {
-    setIsEditingBusiness(false);
-    setIsSavingBusiness(true);
-    window.setTimeout(() => {
-      setIsSavingBusiness(false);
-    }, 1600);
-  };
-
-  const handleSavePersonal = () => {
+  const handleSavePersonal = async () => {
     setIsEditingPersonal(false);
     setIsSavingPersonal(true);
-    window.setTimeout(() => {
+    try {
+      await authApi.updateProfile({
+        first_name: personalInfo.firstName || null,
+        last_name: personalInfo.lastName || null,
+        phone: personalInfo.phone || null,
+      });
+      updateUser({
+        firstName: personalInfo.firstName,
+        lastName: personalInfo.lastName,
+        phone: personalInfo.phone,
+      });
+    } catch {
+      // revert local form back to store values on failure
+      if (user) {
+        setPersonalInfo({
+          firstName: user.firstName ?? '',
+          lastName: user.lastName ?? '',
+          email: user.email ?? '',
+          phone: user.phone ?? '',
+        });
+      }
+    } finally {
       setIsSavingPersonal(false);
-    }, 1600);
+    }
   };
 
   const selectedBusiness = activeBusiness ?? businesses[0];
@@ -301,7 +439,7 @@ export function SettingsPage() {
                   variant="outline"
                   size="sm"
                   className="border-slate-200 text-slate-700 hover:bg-slate-50"
-                  onClick={() => setIsEditingBusiness(true)}
+                  onClick={handleStartEditingBusiness}
                 >
                   Edit
                 </Button>
@@ -312,8 +450,8 @@ export function SettingsPage() {
                 <Label htmlFor="businessName" className="text-slate-700">Business Name</Label>
                 <Input
                   id="businessName"
-                  value={selectedBusiness.name}
-                  onChange={(e) => handleUpdateBusiness('name', e.target.value)}
+                  value={isEditingBusiness ? (editingBusinessInfo.name ?? '') : selectedBusiness.name}
+                  onChange={(e) => handleUpdateBusinessField('name', e.target.value)}
                   disabled={!isEditingBusiness}
                   className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
@@ -323,8 +461,8 @@ export function SettingsPage() {
                 <Label htmlFor="businessDescription" className="text-slate-700">Description</Label>
                 <Textarea
                   id="businessDescription"
-                  value={selectedBusiness.description}
-                  onChange={(e) => handleUpdateBusiness('description', e.target.value)}
+                  value={isEditingBusiness ? (editingBusinessInfo.description ?? '') : selectedBusiness.description}
+                  onChange={(e) => handleUpdateBusinessField('description', e.target.value)}
                   disabled={!isEditingBusiness}
                   className="min-h-20 border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
                 />
@@ -336,8 +474,8 @@ export function SettingsPage() {
                   <Input
                     id="websiteUrl"
                     type="url"
-                    value={selectedBusiness.websiteUrl}
-                    onChange={(e) => handleUpdateBusiness('websiteUrl', e.target.value)}
+                    value={isEditingBusiness ? (editingBusinessInfo.websiteUrl ?? '') : selectedBusiness.websiteUrl}
+                    onChange={(e) => handleUpdateBusinessField('websiteUrl', e.target.value)}
                     placeholder="https://example.com"
                     disabled={!isEditingBusiness}
                     className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
@@ -348,8 +486,8 @@ export function SettingsPage() {
                   <Label htmlFor="instagramHandle" className="text-slate-700">Instagram Handle</Label>
                   <Input
                     id="instagramHandle"
-                    value={selectedBusiness.instagramHandle}
-                    onChange={(e) => handleUpdateBusiness('instagramHandle', e.target.value)}
+                    value={isEditingBusiness ? (editingBusinessInfo.instagramHandle ?? '') : selectedBusiness.instagramHandle}
+                    onChange={(e) => handleUpdateBusinessField('instagramHandle', e.target.value)}
                     placeholder="@yourbusiness"
                     disabled={!isEditingBusiness}
                     className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
@@ -359,32 +497,11 @@ export function SettingsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="brandColor" className="text-slate-700">Brand Color</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="brandColor"
-                      type="color"
-                      value={selectedBusiness.brandColor}
-                      onChange={(e) => handleUpdateBusiness('brandColor', e.target.value)}
-                      disabled={!isEditingBusiness}
-                      className="w-16 h-10 p-1 cursor-pointer border-slate-200 bg-white/90 disabled:cursor-not-allowed"
-                    />
-                    <Input
-                      value={selectedBusiness.brandColor}
-                      onChange={(e) => handleUpdateBusiness('brandColor', e.target.value)}
-                      placeholder="#3b82f6"
-                      disabled={!isEditingBusiness}
-                      className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
                   <Label htmlFor="location" className="text-slate-700">Location</Label>
                   <Input
                     id="location"
-                    value={selectedBusiness.location}
-                    onChange={(e) => handleUpdateBusiness('location', e.target.value)}
+                    value={isEditingBusiness ? (editingBusinessInfo.location ?? '') : selectedBusiness.location}
+                    onChange={(e) => handleUpdateBusinessField('location', e.target.value)}
                     placeholder="City, Country"
                     disabled={!isEditingBusiness}
                     className="border-slate-200 bg-white/90 disabled:bg-slate-100/70 disabled:text-slate-500"
@@ -631,8 +748,14 @@ export function SettingsPage() {
               <div className="flex items-center gap-3 p-4 border border-slate-200 rounded-lg bg-white/90">
                 <CreditCard className="w-8 h-8 text-slate-400" />
                 <div className="flex-1">
-                  <div className=" text-slate-900">•••• •••• •••• {MOCK_PAYMENT_METHOD.last4}</div>
-                  <p className="text-sm text-slate-600">Expires {MOCK_PAYMENT_METHOD.expiryMonth}/{MOCK_PAYMENT_METHOD.expiryYear}</p>
+                  {paymentMethod ? (
+                    <>
+                      <div className=" text-slate-900">•••• •••• •••• {paymentMethod.last4}</div>
+                      <p className="text-sm text-slate-600">Expires {paymentMethod.expiryMonth}/{paymentMethod.expiryYear}</p>
+                    </>
+                  ) : (
+                    <div className="text-sm text-slate-500">No payment method on file</div>
+                  )}
                 </div>
                 <Button
                   variant="outline"
@@ -640,7 +763,7 @@ export function SettingsPage() {
                   className="border-slate-200 text-slate-700 hover:bg-slate-50"
                   onClick={() => setIsPaymentModalOpen(true)}
                 >
-                  Update
+                  {paymentMethod ? 'Update' : 'Add'}
                 </Button>
               </div>
             </div>
@@ -667,11 +790,37 @@ export function SettingsPage() {
           onOpenChange={setIsPlanModalOpen}
           currentPlanId={currentPlanId}
           onSelectPlan={() => setIsPlanModalOpen(false)}
+          streams={planStreams.length > 0 ? planStreams : undefined}
         />
         <PaymentMethodModal
           open={isPaymentModalOpen}
           onOpenChange={setIsPaymentModalOpen}
         />
+
+        <AlertDialog
+          open={businessIdPendingDelete !== null}
+          onOpenChange={(open: boolean) => {
+            if (!open) setBusinessIdPendingDelete(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this business?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This will remove the business from your account. This action cannot be undone.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteBusiness}
+                className="bg-destructive text-white hover:bg-destructive/90"
+              >
+                Delete business
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

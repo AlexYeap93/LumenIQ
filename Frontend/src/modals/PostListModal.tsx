@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Clock, Image as ImageIcon } from 'lucide-react';
 import { Button } from '../components/ui/button';
-import { type CalendarPost as Post } from '../mockData';
+import type { CalendarPost as Post } from '../types/calendar';
 
 interface PostListModalProps {
   isOpen: boolean;

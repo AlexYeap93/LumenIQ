@@ -1,4 +1,15 @@
 import { useState, useEffect } from 'react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../components/ui/alert-dialog';
+import { useSelector } from 'react-redux';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Calendar, Image as ImageIcon, Clock, Sparkles, Trash2, AlertCircle } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -6,11 +17,11 @@ import { Textarea } from '../components/ui/textarea';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { PhotoSelector } from '../components/PhotoSelector';
-import { MOCK_AI_CAPTIONS } from '../mockData';
+import type { RootState } from '../auth/store';
 
 interface Post {
   id: string;
-  image?: string;
+  images?: string[];
   caption: string;
   createdDate: Date;
   scheduledDate?: Date;
@@ -43,13 +54,17 @@ export function PostDetailModal({
   });
   const [isGeneratingCaption, setIsGeneratingCaption] = useState(false);
   const [showPhotoSelector, setShowPhotoSelector] = useState(false);
-  const [selectedImage, setSelectedImage] = useState<string | undefined>(post?.image);
+  const [selectedImages, setSelectedImages] = useState<string[]>(post?.images || []);
+  const [confirmAction, setConfirmAction] = useState<null | 'convertToDraft' | 'deletePost'>(null);
 
-  // Update local state when post prop changes
+  const activeBusiness = useSelector((state: RootState) =>
+    state.business.businesses.find((b) => b.isActive),
+  );
+
   useEffect(() => {
     if (post) {
       setCaption(post.caption);
-      setSelectedImage(post.image);
+      setSelectedImages(post.images || []);
       
       if (post.scheduledDate) {
         const hours = post.scheduledDate.getHours().toString().padStart(2, '0');
@@ -63,6 +78,10 @@ export function PostDetailModal({
       }
     }
   }, [post]);
+
+  useEffect(() => {
+    if (!isOpen) setConfirmAction(null);
+  }, [isOpen]);
 
   if (!post) return null;
 
@@ -88,11 +107,15 @@ export function PostDetailModal({
   };
 
   const handleSaveDraft = () => {
+    const [hours, minutes] = scheduledTime.split(':').map(Number);
+    const [year, month, day] = scheduledDate.split('-').map(Number);
+    const draftDateTime = new Date(year, month - 1, day, hours, minutes);
+
     onUpdatePost(post.id, {
       caption,
-      image: selectedImage,
+      images: selectedImages.length > 0 ? selectedImages : undefined,
       status: 'draft',
-      scheduledDate: undefined
+      scheduledDate: draftDateTime
     });
     onClose();
   };
@@ -104,51 +127,41 @@ export function PostDetailModal({
 
     onUpdatePost(post.id, {
       caption,
-      image: selectedImage,
+      images: selectedImages.length > 0 ? selectedImages : undefined,
       scheduledDate: scheduledDateTime,
       status: 'scheduled'
     });
     onClose();
   };
 
-  const handleConvertToDraft = () => {
-    if (window.confirm('Convert this scheduled post back to a draft?')) {
-      onUpdatePost(post.id, {
-        status: 'draft',
-        scheduledDate: undefined
-      });
-      onClose();
-    }
-  };
+  const handleConvertToDraftClick = () => setConfirmAction('convertToDraft');
 
-  const handleCancelPost = () => {
-    if (window.confirm('Are you sure you want to delete this post?')) {
+  const handleDeletePostClick = () => setConfirmAction('deletePost');
+
+  const executeConfirmAction = () => {
+    if (confirmAction === 'convertToDraft') {
+      onUpdatePost(post.id, { status: 'draft' });
+      onClose();
+    } else if (confirmAction === 'deletePost') {
       onDeletePost(post.id);
       onClose();
     }
-  };
-
-  const handleGenerateCaption = async () => {
-    setIsGeneratingCaption(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    const aiCaptions = MOCK_AI_CAPTIONS;
-    setCaption(aiCaptions[Math.floor(Math.random() * aiCaptions.length)]);
-    setIsGeneratingCaption(false);
+    setConfirmAction(null);
   };
 
   const handleImageSelection = (image: string) => {
-    setSelectedImage(image);
+    setSelectedImages(prev => [...prev, image]);
     setShowPhotoSelector(false);
   };
 
   const isDraft = post.status === 'draft';
   const isScheduled = post.status === 'scheduled';
+  const displayImage = selectedImages.length > 0 ? selectedImages[0] : undefined;
 
   return (
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -157,7 +170,6 @@ export function PostDetailModal({
             className="fixed inset-0 bg-black/50 z-50"
           />
 
-          {/* Modal */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -169,7 +181,6 @@ export function PostDetailModal({
               onClick={(e) => e.stopPropagation()}
               className="bg-card rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
             >
-              {/* Header */}
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <div>
                   <h2 className="text-xl font-semibold text-foreground">
@@ -182,38 +193,24 @@ export function PostDetailModal({
                     }
                   </p>
                 </div>
-                <button
-                  onClick={onClose}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
+                <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              {/* Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Status Badge */}
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">Status:</span>
-                  <span
-                    className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                      isDraft
-                        ? 'bg-muted text-muted-foreground'
-                        : 'bg-red-500/10 text-red-600 border border-red-500/30'
-                    }`}
-                  >
+                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                    isDraft ? 'bg-muted text-muted-foreground' : 'bg-red-500/10 text-red-600 border border-red-500/30'
+                  }`}>
                     {isDraft ? 'Draft' : 'Scheduled'}
                   </span>
                 </div>
 
-                {/* Image Preview */}
-                {selectedImage ? (
+                {displayImage ? (
                   <div className="relative aspect-video bg-muted rounded-lg overflow-hidden group">
-                    <img
-                      src={selectedImage}
-                      alt="Post preview"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={displayImage} alt="Post preview" className="w-full h-full object-cover" />
                     {isDraft && (
                       <button
                         onClick={() => setShowPhotoSelector(true)}
@@ -247,23 +244,9 @@ export function PostDetailModal({
                   </>
                 )}
 
-                {/* Caption */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label htmlFor="caption">Caption</Label>
-                    {isDraft && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={handleGenerateCaption}
-                        disabled={isGeneratingCaption}
-                        className="h-8 text-xs"
-                      >
-                        <Sparkles className={`w-3 h-3 mr-1 ${isGeneratingCaption ? 'animate-spin' : ''}`} />
-                        {isGeneratingCaption ? 'Generating...' : 'Generate with AI'}
-                      </Button>
-                    )}
                   </div>
                   {isDraft ? (
                     <Textarea
@@ -278,12 +261,9 @@ export function PostDetailModal({
                       {caption || 'No caption'}
                     </div>
                   )}
-                  <p className="text-xs text-muted-foreground">
-                    {caption.length} characters
-                  </p>
+                  <p className="text-xs text-muted-foreground">{caption.length} characters</p>
                 </div>
 
-                {/* Metadata */}
                 {isDraft && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
@@ -295,11 +275,11 @@ export function PostDetailModal({
                         id="scheduledDate"
                         type="date"
                         value={scheduledDate}
+                        min={new Date().toISOString().split('T')[0]}
                         onChange={(e) => setScheduledDate(e.target.value)}
                         className="bg-input-background"
                       />
                     </div>
-
                     <div className="space-y-2">
                       <Label htmlFor="scheduledTime" className="flex items-center gap-2">
                         <Clock className="w-4 h-4" />
@@ -329,21 +309,16 @@ export function PostDetailModal({
                 )}
               </div>
 
-              {/* Footer Actions */}
               <div className="flex items-center justify-between p-6 border-t border-border bg-muted/30">
                 <div className="flex items-center gap-2">
                   {isScheduled && (
-                    <Button
-                      variant="outline"
-                      onClick={handleConvertToDraft}
-                      className="text-muted-foreground"
-                    >
+                    <Button variant="outline" onClick={handleConvertToDraftClick} className="text-muted-foreground">
                       Convert to Draft
                     </Button>
                   )}
                   <Button
                     variant="outline"
-                    onClick={handleCancelPost}
+                    onClick={handleDeletePostClick}
                     className="text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
                   >
                     <Trash2 className="w-4 h-4 mr-2" />
@@ -352,39 +327,60 @@ export function PostDetailModal({
                 </div>
                 {isDraft && (
                   <div className="flex items-center gap-3">
-                    <Button
-                      variant="outline"
-                      onClick={handleSaveDraft}
-                    >
-                      Save Draft
-                    </Button>
-                    <Button
-                      onClick={handleSchedulePost}
-                      className="gradient-blue-primary text-white hover:opacity-90"
-                    >
+                    <Button variant="outline" onClick={handleSaveDraft}>Save Draft</Button>
+                    <Button onClick={handleSchedulePost} className="gradient-blue-primary text-white hover:opacity-90">
                       Schedule Post
                     </Button>
                   </div>
                 )}
                 {isScheduled && (
-                  <Button
-                    variant="outline"
-                    onClick={onClose}
-                  >
-                    Close
-                  </Button>
+                  <Button variant="outline" onClick={onClose}>Close</Button>
                 )}
               </div>
             </div>
           </motion.div>
 
-          {/* Photo Selector Modal - rendered last so it appears on top */}
           {showPhotoSelector && (
             <PhotoSelector
               onSelectPhoto={handleImageSelection}
               onClose={() => setShowPhotoSelector(false)}
             />
           )}
+
+          <AlertDialog
+            open={confirmAction !== null}
+            onOpenChange={(open: boolean) => {
+              if (!open) setConfirmAction(null);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {confirmAction === 'convertToDraft'
+                    ? 'Convert to draft?'
+                    : 'Delete this post?'}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {confirmAction === 'convertToDraft'
+                    ? 'This scheduled post will return to draft. You can edit and schedule it again.'
+                    : 'This will permanently delete this post. This action cannot be undone.'}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Back</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={executeConfirmAction}
+                  className={
+                    confirmAction === 'deletePost'
+                      ? 'bg-destructive text-white hover:bg-destructive/90'
+                      : undefined
+                  }
+                >
+                  {confirmAction === 'convertToDraft' ? 'Convert to draft' : 'Delete'}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </AnimatePresence>

@@ -15,12 +15,12 @@ class BusinessService:
         try:
             response = (
                 self.admin_client.table(self.table_name)
-                .select("id, name, business_type, city, country, instagram_handle")
+                .select("id, name, business_type, city, country, instagram_handle, profile_json")
                 .eq("user_id", user_id)
                 .order("created_at", desc=True)
                 .execute()
             )
-            return [BusinessSummary(**row) for row in response.data]
+            return [BusinessSummary.from_db_row(row) for row in response.data]
         except Exception as error:
             raise ExternalServiceError("Supabase", str(error)) from error
 
@@ -33,7 +33,7 @@ class BusinessService:
                 .single()
                 .execute()
             )
-            business = Business(**response.data)
+            business = Business.from_db_row(response.data)
             if business.user_id != user_id:
                 raise ForbiddenError("You do not own this business")
             return business
@@ -46,27 +46,35 @@ class BusinessService:
 
     def create_business(self, user_id: str, business_data: BusinessCreate) -> Business:
         try:
-            insert_data = {"user_id": user_id, **business_data.model_dump(exclude_none=True)}
+            column_data, profile_data = business_data.split_for_db()
+            insert_data = {"user_id": user_id, **column_data}
+            if profile_data:
+                insert_data["profile_json"] = profile_data
             response = (
                 self.admin_client.table(self.table_name)
                 .insert(insert_data)
                 .execute()
             )
-            return Business(**response.data[0])
+            return Business.from_db_row(response.data[0])
         except Exception as error:
             raise ExternalServiceError("Supabase", str(error)) from error
 
     def update_business(self, business_id: str, user_id: str, updates: BusinessUpdate) -> Business:
-        self.get_business(business_id, user_id)
+        existing = self.get_business(business_id, user_id)
         try:
-            update_data = updates.model_dump(exclude_none=True)
+            column_data, profile_data = updates.split_for_db()
+            if profile_data:
+                merged_profile = {**(existing.profile_json or {}), **profile_data}
+                column_data["profile_json"] = merged_profile
+            if not column_data:
+                return existing
             response = (
                 self.admin_client.table(self.table_name)
-                .update(update_data)
+                .update(column_data)
                 .eq("id", business_id)
                 .execute()
             )
-            return Business(**response.data[0])
+            return Business.from_db_row(response.data[0])
         except Exception as error:
             raise ExternalServiceError("Supabase", str(error)) from error
 

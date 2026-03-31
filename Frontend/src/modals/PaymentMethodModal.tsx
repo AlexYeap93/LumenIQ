@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CreditCard, Lock } from 'lucide-react';
+import { CreditCard, Lock, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
@@ -7,11 +7,12 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle
 } from '../components/ui/dialog';
+import { paymentsApi } from '../api/payments';
+import { toast } from 'sonner';
 
 interface PaymentMethodModalProps {
   open: boolean;
@@ -25,6 +26,19 @@ export function PaymentMethodModal({
   onSavePaymentMethod
 }: PaymentMethodModalProps) {
   const [holderName, setHolderName] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
+
+  const handleStripePortal = async () => {
+    setIsRedirecting(true);
+    try {
+      const { portal_url } = await paymentsApi.createPortal(window.location.href);
+      window.location.href = portal_url;
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Could not open billing portal';
+      toast.error(message);
+      setIsRedirecting(false);
+    }
+  };
 
   const handleSave = () => {
     onSavePaymentMethod?.({ holderName });
@@ -45,8 +59,27 @@ export function PaymentMethodModal({
               Stripe-secured payment details
             </div>
             <p className="mt-2 text-xs text-slate-500">
-              Card details will be collected via Stripe Elements/Checkout in production.
+              Manage your payment methods securely through the Stripe billing portal.
             </p>
+          </div>
+
+          <Button
+            onClick={handleStripePortal}
+            disabled={isRedirecting}
+            variant="outline"
+            className="w-full h-11 text-sm gap-2 border-blue-200 text-blue-700 hover:bg-blue-50"
+          >
+            {isRedirecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ExternalLink className="h-4 w-4" />
+            )}
+            {isRedirecting ? 'Redirecting...' : 'Open Stripe Billing Portal'}
+          </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-200" /></div>
+            <div className="relative flex justify-center text-xs"><span className="bg-white px-2 text-slate-400">or enter name for records</span></div>
           </div>
 
           <div className="space-y-2">
@@ -64,7 +97,7 @@ export function PaymentMethodModal({
             <Label className="text-slate-700">Card details</Label>
             <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-200 bg-white/80 px-4 py-3 text-sm text-slate-500">
               <CreditCard className="h-4 w-4 text-slate-400" />
-              will add the stripe section here
+              Stripe Elements will be integrated here
             </div>
           </div>
         </div>

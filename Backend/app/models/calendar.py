@@ -21,9 +21,11 @@ class CalendarPostBase(BaseModel):
 
 
 class CalendarPostCreate(CalendarPostBase):
-    content_calendar_id: str
+    content_calendar_id: str | None = None
     scheduled_at: datetime | None = None
-    media: list[Any] = []
+    status: ScheduledPostStatus = ScheduledPostStatus.DRAFT
+    media: list[str] = []
+    """media is a list of public URLs pointing to uploaded images/videos."""
 
 
 class CalendarPostUpdate(BaseModel):
@@ -31,18 +33,21 @@ class CalendarPostUpdate(BaseModel):
     hashtags: list[str] | None = None
     scheduled_at: datetime | None = None
     status: ScheduledPostStatus | None = None
-    media: list[Any] | None = None
+    media: list[str] | None = None
+    """media is a list of public URLs pointing to uploaded images/videos."""
     day_of_the_week: int | None = None
 
 
 class CalendarPost(CalendarPostBase):
     id: str
     business_id: str
-    content_calendar_id: str
+    content_calendar_id: str | None = None
     status: ScheduledPostStatus = ScheduledPostStatus.DRAFT
     scheduled_at: datetime | None = None
     approved_at: datetime | None = None
-    media: list[Any] = []
+    media: list[str] = []
+    """media is a list of public URLs pointing to uploaded images/videos.
+    The frontend maps this field to ``images`` for display purposes."""
     publish_result: dict[str, Any] | None = None
     last_error: dict[str, Any] | None = None
     created_at: datetime | None = None

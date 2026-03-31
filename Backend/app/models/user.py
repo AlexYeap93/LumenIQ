@@ -6,6 +6,9 @@ class NotificationPreferences(BaseModel):
     email_notifications: bool = True
     push_notifications: bool = True
     marketing_emails: bool = False
+    post_reminders: bool = True
+    weekly_reports: bool = False
+    ai_suggestions: bool = True
 
 
 class UserProfile(BaseModel):
@@ -30,6 +33,7 @@ class UserProfileUpdate(BaseModel):
     last_name: str | None = None
     phone: str | None = None
     avatar_url: str | None = None
+    plan: str | None = None
     stripe_customer_id: str | None = None
     notification_preferences: NotificationPreferences | None = None
 
@@ -63,3 +67,7 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordUpdateRequest(BaseModel):
     new_password: str
+
+
+class GoogleOAuthRequest(BaseModel):
+    id_token: str
