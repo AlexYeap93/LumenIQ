@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Plus, Clock } from 'lucide-react';
+import { MediaThumbnail, detectMediaType } from './MediaThumbnail';
 
 interface Post {
   id: string;
@@ -74,9 +75,10 @@ export function CalendarDay({
               {/* Photo thumbnail or placeholder */}
               {firstImage ? (
                 <div className="relative w-full aspect-video">
-                  <img
+                  <MediaThumbnail
                     src={firstImage}
                     alt="Post"
+                    mediaType={detectMediaType(firstImage)}
                     className="w-full h-full object-cover"
                   />
                   {/* Multiple images indicator */}
