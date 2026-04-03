@@ -12,11 +12,10 @@ import { Plus, Calendar, FileText, CalendarDays, Layers, PenLine, Loader2, Check
 import type { RootState } from '../auth/store';
 import { calendarApi } from '../api/calendar';
 import { cacheInvalidate } from '../api/cache';
+import { supabase } from '../lib/supabase';
 import { mapCalendarPostFromAPI } from '../types/calendar';
-import type { CalendarPost } from '../types/calendar';
+import type { CalendarPost, CalendarPostAPI } from '../types/calendar';
 import { toast } from 'sonner';
-
-const POLL_INTERVAL = 30_000; // 30 seconds
 
 type Post = CalendarPost;
 
@@ -58,13 +57,54 @@ export function CalendarPage() {
     }
   }, [businessId]);
 
-  // Initial fetch + polling for agent-created posts
+  // Initial fetch
   useEffect(() => {
     if (!businessId) return;
     fetchPosts(true);
-    const interval = setInterval(() => fetchPosts(), POLL_INTERVAL);
-    return () => clearInterval(interval);
   }, [businessId, fetchPosts]);
+
+  // Supabase Realtime: subscribe to calendar_posts changes for this business
+  useEffect(() => {
+    if (!businessId) return;
+
+    const channel = supabase
+      .channel(`calendar_posts:${businessId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'calendar_posts',
+          filter: `business_id=eq.${businessId}`,
+        },
+        (payload) => {
+          const { eventType, new: newRow, old: oldRow } = payload;
+
+          if (eventType === 'INSERT' && newRow) {
+            const post = mapCalendarPostFromAPI(newRow as CalendarPostAPI);
+            setPosts((prev) => {
+              if (prev.some((p) => p.id === post.id)) return prev;
+              return [...prev, post];
+            });
+            cacheInvalidate(`calendar-posts:${businessId}`);
+          } else if (eventType === 'UPDATE' && newRow) {
+            const post = mapCalendarPostFromAPI(newRow as CalendarPostAPI);
+            setPosts((prev) =>
+              prev.map((p) => (p.id === post.id ? post : p)),
+            );
+            cacheInvalidate(`calendar-posts:${businessId}`);
+          } else if (eventType === 'DELETE' && oldRow) {
+            setPosts((prev) => prev.filter((p) => p.id !== oldRow.id));
+            cacheInvalidate(`calendar-posts:${businessId}`);
+          }
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [businessId]);
 
   useEffect(() => {
     const state = location.state as { action?: string } | null;
